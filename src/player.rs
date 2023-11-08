@@ -1,6 +1,6 @@
 use bevy::{prelude::*, asset::LoadedFolder};
 
-use crate::{physics::Velocity, GameState};
+use crate::{physics::Velocity, GameState, GameExtents};
 
 #[derive(Resource, Default)]
 struct PlayerSpriteFolder(Handle<LoadedFolder>);
@@ -36,9 +36,13 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(FlapForce(100.0))
             .add_systems(OnEnter(GameState::Loading), load_textures)
-            .add_systems(OnEnter(GameState::Finished), setup)
-            .add_systems(Update, (flap_input, auto_flap, translate_player, animate_sprite, animate_velocity).chain()
-            );
+            .add_systems(OnExit(GameState::Loading), setup)
+            .add_systems(Update, (
+                auto_flap.run_if(in_state(GameState::Idling)),
+                flap_input.run_if(not(in_state(GameState::Dead))),
+                translate_player, animate_sprite, animate_velocity
+            ).chain())
+            .add_systems(PostUpdate, bounds_collision);
     }
 }
 
@@ -119,11 +123,17 @@ fn animate_sprite(
 
 fn flap_input(
     mut velocity: ResMut<Velocity>,
+    mut next_state: ResMut<NextState<GameState>>,
+    game_state: Res<State<GameState>>,
     keyboard_input: Res<Input<KeyCode>>,
     flap_force: Res<FlapForce>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Space) {
         velocity.y = flap_force.0;
+
+        if *game_state == GameState::Idling {
+            next_state.set(GameState::Playing);
+        }
     }
 }
 
@@ -142,5 +152,28 @@ fn auto_flap(
 fn animate_velocity(mut query: Query<&mut Transform, With<Player>>, velocity: Res<Velocity>, time: Res<Time>) {
     query.for_each_mut(|mut transform| {
         transform.rotation = transform.rotation.lerp(Quat::from_rotation_z(velocity.y.atan2(velocity.x)), 25.0 * time.delta_seconds());
+    });
+}
+
+fn bounds_collision(
+    mut query: Query<&mut Transform, With<Player>>,
+    mut velocity: ResMut<Velocity>,
+    mut next_state: ResMut<NextState<GameState>>,
+    windows: Query<&Window>,
+    projection_query: Query<&OrthographicProjection>,
+    game_extents: Res<GameExtents>,
+) {
+    query.for_each_mut(|mut transform| {
+        let primary_window = windows.single();
+        let projection = projection_query.single();
+        if transform.translation.y < -game_extents.0.y {
+            transform.translation.y = -game_extents.0.y;
+            velocity.0 = Vec2::ZERO;
+
+            next_state.set(GameState::Dead);
+        } else if transform.translation.y > primary_window.height() * 0.5 * projection.scale {
+            transform.translation.y = primary_window.height() * 0.5 * projection.scale;
+            velocity.y = 0.0;
+        }
     });
 }

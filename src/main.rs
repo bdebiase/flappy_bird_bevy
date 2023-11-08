@@ -3,13 +3,11 @@ mod background;
 mod player;
 mod tiling;
 mod ground;
-mod stacking;
 
 use bevy::{prelude::*, asset::LoadedFolder, sprite::{MaterialMesh2dBundle, Mesh2dHandle}};
 use ground::GroundPlugin;
 use physics::{PhysicsPlugin, Velocity};
 use background::{BackgroundPlugin, Background};
-use stacking::StackingPlugin;
 use player::PlayerPlugin;
 use tiling::TilingPlugin;
 
@@ -20,14 +18,21 @@ struct Debug;
 enum GameState {
     #[default]
     Loading,
-    Finished,
+    Idling,
+    Playing,
+    Dead,
 }
 
 #[derive(Resource)]
 struct DistanceTraveled(f32);
 
 #[derive(Resource)]
-struct BaseHeight(f32);
+struct GameSettings {
+    scaling: f32,
+}
+
+#[derive(Resource, Default)]
+struct GameExtents(Vec2);
 
 fn main() {
     App::new()
@@ -45,7 +50,6 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
             TilingPlugin,
-            // StackingPlugin,
             PhysicsPlugin,
             BackgroundPlugin,
             GroundPlugin,
@@ -54,7 +58,10 @@ fn main() {
         .insert_resource(ClearColor(Color::hex("#4EC0CA").unwrap()))
         .insert_resource(Velocity::from(Vec2::new(150.0, 0.0)))
         .insert_resource(DistanceTraveled(0.0))
-        .insert_resource(BaseHeight(0.0))
+        .insert_resource(GameSettings {
+            scaling: 0.25,
+        })
+        .insert_resource(GameExtents::default())
         .add_systems(Startup, setup)
         .add_systems(Update, (
             load_assets.run_if(in_state(GameState::Loading)),
@@ -70,13 +77,13 @@ fn setup(mut commands: Commands) {
     camera_bundle.projection.scale *= 0.25;
     commands.spawn(camera_bundle);
 
-    commands.spawn((SpriteBundle {
-        sprite: Sprite {
-            custom_size: Some(Vec2::new(10.0, 10.0)),
-            ..default()
-        },
-        ..default()
-    }, Debug));
+    // commands.spawn((SpriteBundle {
+    //     sprite: Sprite {
+    //         custom_size: Some(Vec2::new(10.0, 10.0)),
+    //         ..default()
+    //     },
+    //     ..default()
+    // }, Debug));
 }
 
 fn load_assets(
@@ -100,20 +107,24 @@ fn load_assets(
     }
 
     if *assets_loaded == *assets_to_load && *assets_to_load != 0 {
-        next_state.set(GameState::Finished);
+        next_state.set(GameState::Idling);
     }
 }
 
 fn update_distance(
     mut distance_traveled: ResMut<DistanceTraveled>,
+    game_state: Res<State<GameState>>,
     velocity: Res<Velocity>,
     time: Res<Time>,
 ) {
+    if *game_state == GameState::Dead {
+        return;
+    }
     distance_traveled.0 += velocity.x * time.delta_seconds();
 }
 
 fn update_base_height(
-    mut base_height: ResMut<BaseHeight>,
+    mut game_extents: ResMut<GameExtents>,
     projection_query: Query<&OrthographicProjection>,
     windows: Query<&Window>,
 ) {
@@ -121,16 +132,17 @@ fn update_base_height(
     let projection: &OrthographicProjection = projection_query.single();
 
     let window_size = Vec2::new(primary_window.width(), primary_window.height()) * projection.scale;
-    let offset = -window_size * 0.5 * 0.125;
-
-    base_height.0 = -(window_size.y * 0.5 * 0.5) + offset.y;
+    game_extents.0 = Vec2::new(
+        window_size.x * 0.5,
+        window_size.y * 0.5 * 0.5,
+    );
 }
 
 fn update_debug(
     mut query: Query<&mut Transform, With<Debug>>,
-    base_height: Res<BaseHeight>,
+    game_extents: Res<GameExtents>,
 ) {
     query.for_each_mut(|mut transform| {
-        transform.translation.y = base_height.0;
+        transform.translation.y = game_extents.0.y;
     });
 }

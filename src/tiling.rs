@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::{Material2d, MaterialMesh2dBundle, Material2dPlugin, Mesh2dHandle}, render::{render_resource::{AsBindGroup, ShaderRef}, texture::{ImageSampler, ImageLoaderSettings, ImageAddressMode, ImageSamplerDescriptor}, mesh::VertexAttributeValues}, window::WindowResized};
 
-use crate::DistanceTraveled;
+use crate::{DistanceTraveled, GameState};
 
 #[derive(Component)]
 pub struct Tiling {

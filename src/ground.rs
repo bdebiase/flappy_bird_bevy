@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::{Mesh2dHandle, MaterialMesh2dBundle}, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageLoaderSettings, ImageSampler}};
 
-use crate::{GameState, tiling::Tiling, stacking::StackedSprite, background::Background};
+use crate::{GameState, tiling::Tiling, background::Background};
 
 #[derive(Component)]
 pub struct Ground;
@@ -9,7 +9,7 @@ pub struct GroundPlugin;
 
 impl Plugin for GroundPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Finished), setup);
+        app.add_systems(OnExit(GameState::Loading), setup);
             // .add_systems(Update, reposition_ground);
     }
 }
@@ -38,5 +38,5 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * 0.0),
         ..default()
-    }, Background { pivot: Vec2::new(0.0, -1.0) }, Tiling::default()));
+    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Vec2::new(0.0, -1.0) }, Tiling::default()));
 }
