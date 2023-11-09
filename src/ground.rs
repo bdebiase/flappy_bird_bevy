@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::{Mesh2dHandle, MaterialMesh2dBundle}, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageLoaderSettings, ImageSampler}};
+use bevy::{prelude::*, sprite::{Mesh2dHandle, MaterialMesh2dBundle, Anchor}, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageLoaderSettings, ImageSampler}};
 
 use crate::{GameState, tiling::Tiling, background::Background};
 
@@ -38,5 +38,5 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * 0.0),
         ..default()
-    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Vec2::new(0.0, -1.0) }, Tiling::default()));
+    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Anchor::BottomCenter }, Tiling::default()));
 }

@@ -1,13 +1,13 @@
 use std::f32::consts::PI;
 
-use bevy::{prelude::*, asset::LoadedFolder, window::WindowResized, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageSampler, ImageLoaderSettings}, sprite::{Mesh2dHandle, MaterialMesh2dBundle}};
+use bevy::{prelude::*, asset::LoadedFolder, window::WindowResized, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageSampler, ImageLoaderSettings}, sprite::{Mesh2dHandle, MaterialMesh2dBundle, Anchor}};
 
 use crate::{GameState, ground::Ground, tiling::Tiling, GameExtents};
 
 #[derive(Component, Default)]
 pub struct Background {
     pub anchor: usize,
-    pub pivot: Vec2,
+    pub pivot: Anchor,
 }
 
 impl Background {
@@ -50,7 +50,7 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * -25.0),
         ..default()
-    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Vec2::new(0.0, 1.0) }, Tiling { parallax_ratio: 1./4. }));
+    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./4. }));
 
     let texture_handle = asset_server.load_with_settings("sprites/background/buildings.png", settings.clone());
     let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
@@ -59,7 +59,7 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * -50.0),
         ..default()
-    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Vec2::new(0.0, 1.0) }, Tiling { parallax_ratio: 1./16. }));
+    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./8. }));
 
     let texture_handle = asset_server.load_with_settings("sprites/background/clouds.png", settings.clone());
     let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
@@ -68,7 +68,7 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * -75.0),
         ..default()
-    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Vec2::new(0.0, 1.0) }, Tiling { parallax_ratio: 1./32. }));
+    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./16. }));
 
     let texture_handle = asset_server.load_with_settings("sprites/background/clouds.png", settings);
     let mesh_handle: Mesh2dHandle = meshes.add(mesh).into();
@@ -77,7 +77,7 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * 10.0).with_rotation(Quat::from_rotation_z(PI)),
         ..default()
-    }, Background { anchor: Background::ANCHOR_TOP, pivot: Vec2::new(0.0, -2.0) }, Tiling { parallax_ratio: -1./8. }));
+    }, Background { anchor: Background::ANCHOR_TOP, pivot: Anchor::BottomCenter }, Tiling { parallax_ratio: -1./6. }));
 }
 
 fn reposition_background(
@@ -92,10 +92,10 @@ fn reposition_background(
         if let Some(image) = images.get(image_handle) {
             match background.anchor {
                 Background::ANCHOR_TOP => {
-                    transform.translation.y =  game_extents.0.y - image.size_f32().y * 0.5 * background.pivot.y;
+                    transform.translation.y =  game_extents.0.y - image.size_f32().y * background.pivot.as_vec().y;
                 },
                 Background::ANCHOR_BOTTOM => {
-                    transform.translation.y =  image.size_f32().y * 0.5 * background.pivot.y - game_extents.0.y;
+                    transform.translation.y =  image.size_f32().y * background.pivot.as_vec().y  - game_extents.0.y;
                 },
                 _ => {},
             }
