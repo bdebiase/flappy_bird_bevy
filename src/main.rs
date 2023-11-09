@@ -56,7 +56,7 @@ fn main() {
             PlayerPlugin,
         ))
         .insert_resource(ClearColor(Color::hex("#4EC0CA").unwrap()))
-        .insert_resource(Velocity::from(Vec2::new(150.0, 0.0)))
+        .insert_resource(Velocity::from(Vec2::new(50.0, 0.0)))
         .insert_resource(DistanceTraveled(0.0))
         .insert_resource(GameSettings {
             scaling: 0.25,
@@ -76,14 +76,6 @@ fn setup(mut commands: Commands) {
     let mut camera_bundle = Camera2dBundle::default();
     camera_bundle.projection.scale *= 0.25;
     commands.spawn(camera_bundle);
-
-    // commands.spawn((SpriteBundle {
-    //     sprite: Sprite {
-    //         custom_size: Some(Vec2::new(10.0, 10.0)),
-    //         ..default()
-    //     },
-    //     ..default()
-    // }, Debug));
 }
 
 fn load_assets(
