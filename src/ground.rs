@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::{Mesh2dHandle, MaterialMesh2dBundle, Anchor}, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageLoaderSettings, ImageSampler}};
 
-use crate::{GameState, tiling::Tiling, background::Background};
+use crate::{GameState, tiling::Tiling, anchor::AnchoredSprite};
 
 #[derive(Component)]
 pub struct Ground;
@@ -38,5 +38,5 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * 0.0),
         ..default()
-    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Anchor::BottomCenter }, Tiling::default()));
+    }, AnchoredSprite { position: Anchor::BottomCenter, pivot: Anchor::BottomCenter }, Tiling::default()));
 }

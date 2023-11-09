@@ -2,27 +2,13 @@ use std::f32::consts::PI;
 
 use bevy::{prelude::*, asset::LoadedFolder, window::WindowResized, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageSampler, ImageLoaderSettings}, sprite::{Mesh2dHandle, MaterialMesh2dBundle, Anchor}};
 
-use crate::{GameState, ground::Ground, tiling::Tiling, GameExtents};
-
-#[derive(Component, Default)]
-pub struct Background {
-    pub anchor: usize,
-    pub pivot: Anchor,
-}
-
-impl Background {
-    pub const ANCHOR_TOP: usize = 0;
-    pub const ANCHOR_BOTTOM: usize = 1;
-    pub const ANCHOR_LEFT: usize = 2;
-    pub const ANCHOR_RIGHT: usize = 3;
-}
+use crate::{GameState, ground::Ground, tiling::Tiling, GameExtents, anchor::AnchoredSprite};
 
 pub struct BackgroundPlugin;
 
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(GameState::Loading), setup)
-            .add_systems(PostUpdate, reposition_background);
+        app.add_systems(OnExit(GameState::Loading), setup);
     }
 }
 
@@ -50,7 +36,7 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * -25.0),
         ..default()
-    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./4. }));
+    }, AnchoredSprite { position: Anchor::BottomCenter, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./4. }));
 
     let texture_handle = asset_server.load_with_settings("sprites/background/buildings.png", settings.clone());
     let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
@@ -59,7 +45,7 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * -50.0),
         ..default()
-    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./8. }));
+    }, AnchoredSprite { position: Anchor::BottomCenter, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./8. }));
 
     let texture_handle = asset_server.load_with_settings("sprites/background/clouds.png", settings.clone());
     let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
@@ -68,7 +54,7 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * -75.0),
         ..default()
-    }, Background { anchor: Background::ANCHOR_BOTTOM, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./16. }));
+    }, AnchoredSprite { position: Anchor::BottomCenter, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: 1./16. }));
 
     let texture_handle = asset_server.load_with_settings("sprites/background/clouds.png", settings);
     let mesh_handle: Mesh2dHandle = meshes.add(mesh).into();
@@ -77,28 +63,5 @@ fn setup(
         material: materials.add(ColorMaterial::from(texture_handle)),
         transform: Transform::from_translation(Vec3::Z * 10.0).with_rotation(Quat::from_rotation_z(PI)),
         ..default()
-    }, Background { anchor: Background::ANCHOR_TOP, pivot: Anchor::BottomCenter }, Tiling { parallax_ratio: -1./6. }));
-}
-
-fn reposition_background(
-    mut query: Query<(&mut Transform, &Handle<ColorMaterial>, &Background)>,
-    game_extents: Res<GameExtents>,
-    materials: Res<Assets<ColorMaterial>>,
-    images: Res<Assets<Image>>,
-) {
-    query.for_each_mut(|(mut transform, material_handle, background)| {
-        let material = materials.get(material_handle).unwrap();
-        let image_handle = material.texture.clone().unwrap();
-        if let Some(image) = images.get(image_handle) {
-            match background.anchor {
-                Background::ANCHOR_TOP => {
-                    transform.translation.y =  game_extents.0.y - image.size_f32().y * background.pivot.as_vec().y;
-                },
-                Background::ANCHOR_BOTTOM => {
-                    transform.translation.y =  image.size_f32().y * background.pivot.as_vec().y  - game_extents.0.y;
-                },
-                _ => {},
-            }
-        }
-    });
+    }, AnchoredSprite { position: Anchor::TopCenter, pivot: Anchor::TopCenter }, Tiling { parallax_ratio: -1./6. }));
 }

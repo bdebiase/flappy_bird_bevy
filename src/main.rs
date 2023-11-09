@@ -3,11 +3,13 @@ mod background;
 mod player;
 mod tiling;
 mod ground;
+mod anchor;
 
+use anchor::AnchorPlugin;
 use bevy::{prelude::*, asset::LoadedFolder, sprite::{MaterialMesh2dBundle, Mesh2dHandle}};
 use ground::GroundPlugin;
 use physics::{PhysicsPlugin, Velocity};
-use background::{BackgroundPlugin, Background};
+use background::{BackgroundPlugin};
 use player::PlayerPlugin;
 use tiling::TilingPlugin;
 
@@ -49,6 +51,7 @@ fn main() {
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest()),
+            AnchorPlugin,
             TilingPlugin,
             PhysicsPlugin,
             BackgroundPlugin,
@@ -74,8 +77,16 @@ fn main() {
 
 fn setup(mut commands: Commands) {
     let mut camera_bundle = Camera2dBundle::default();
-    camera_bundle.projection.scale *= 0.25;
+    camera_bundle.projection.scale *= 0.5;
     commands.spawn(camera_bundle);
+
+    commands.spawn((SpriteBundle {
+        sprite: Sprite {
+            custom_size: Some(Vec2::new(1.0, 1.0)),
+            ..default()
+        },
+        ..default()
+    }, Debug));
 }
 
 fn load_assets(
