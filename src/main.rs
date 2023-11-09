@@ -75,9 +75,12 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands) {
+fn setup(
+    mut commands: Commands,
+    game_settings: Res<GameSettings>,
+) {
     let mut camera_bundle = Camera2dBundle::default();
-    camera_bundle.projection.scale *= 0.5;
+    camera_bundle.projection.scale *= game_settings.scaling;
     commands.spawn(camera_bundle);
 
     commands.spawn((SpriteBundle {
@@ -128,13 +131,11 @@ fn update_distance(
 
 fn update_base_height(
     mut game_extents: ResMut<GameExtents>,
-    projection_query: Query<&OrthographicProjection>,
+    game_settings: Res<GameSettings>,
     windows: Query<&Window>,
 ) {
     let primary_window = windows.single();
-    let projection: &OrthographicProjection = projection_query.single();
-
-    let window_size = Vec2::new(primary_window.width(), primary_window.height()) * projection.scale;
+    let window_size = Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
     game_extents.0 = Vec2::new(
         window_size.x * 0.5,
         window_size.y * 0.5 * 0.5,

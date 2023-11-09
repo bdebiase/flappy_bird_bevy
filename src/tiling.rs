@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::{Material2d, MaterialMesh2dBundle, Material2dPlugin, Mesh2dHandle}, render::{render_resource::{AsBindGroup, ShaderRef}, texture::{ImageSampler, ImageLoaderSettings, ImageAddressMode, ImageSamplerDescriptor}, mesh::VertexAttributeValues}, window::WindowResized};
 
-use crate::{DistanceTraveled, GameState};
+use crate::{DistanceTraveled, GameState, GameSettings};
 
 #[derive(Component)]
 pub struct Tiling {
@@ -29,7 +29,7 @@ fn resize_tiling(
     windows: Query<&Window>,
     materials: Res<Assets<ColorMaterial>>,
     images: Res<Assets<Image>>,
-    projection_query: Query<&OrthographicProjection>,
+    game_settings: Res<GameSettings>,
     distance_traveled: Res<DistanceTraveled>,
 ) {
     query.for_each_mut(|(mut transform, mesh_handle, material_handle, tiling)| {
@@ -37,9 +37,7 @@ fn resize_tiling(
         let image_handle = material.texture.clone().unwrap();
         if let Some(image) = images.get(image_handle) {
             let primary_window = windows.single();
-
-            let projection: &OrthographicProjection = projection_query.single();
-            let window_size = Vec2::new(primary_window.width(), primary_window.height()) * projection.scale;
+            let window_size = Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
             let texture_size = image.size_f32();
             let texture_aspect_ratio = texture_size.y / texture_size.x;
 

@@ -1,6 +1,6 @@
 use bevy::{prelude::*, asset::LoadedFolder};
 
-use crate::{physics::Velocity, GameState, GameExtents};
+use crate::{physics::Velocity, GameState, GameExtents, GameSettings};
 
 #[derive(Resource, Default)]
 struct PlayerSpriteFolder(Handle<LoadedFolder>);
@@ -159,20 +159,19 @@ fn bounds_collision(
     mut query: Query<&mut Transform, With<Player>>,
     mut velocity: ResMut<Velocity>,
     mut next_state: ResMut<NextState<GameState>>,
+    game_settings: Res<GameSettings>,
     windows: Query<&Window>,
-    projection_query: Query<&OrthographicProjection>,
     game_extents: Res<GameExtents>,
 ) {
     query.for_each_mut(|mut transform| {
         let primary_window = windows.single();
-        let projection = projection_query.single();
         if transform.translation.y < -game_extents.0.y {
             transform.translation.y = -game_extents.0.y;
             velocity.0 = Vec2::ZERO;
 
             next_state.set(GameState::Dead);
-        } else if transform.translation.y > primary_window.height() * 0.5 * projection.scale {
-            transform.translation.y = primary_window.height() * 0.5 * projection.scale;
+        } else if transform.translation.y > primary_window.height() * 0.5 * game_settings.scaling {
+            transform.translation.y = primary_window.height() * 0.5 * game_settings.scaling;
             velocity.y = 0.0;
         }
     });
