@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::{prelude::*, asset::LoadedFolder, window::WindowResized, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageSampler, ImageLoaderSettings}, sprite::{Mesh2dHandle, MaterialMesh2dBundle, Anchor}};
 
-use crate::{GameState, ground::Ground, tiling::Tiling, GameExtents, anchor::AnchoredSprite};
+use crate::{GameState, ground::Ground, tiling::Tiling, GameBoundaries, anchor::AnchoredSprite};
 
 pub struct BackgroundPlugin;
 

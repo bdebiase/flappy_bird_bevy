@@ -1,6 +1,6 @@
 use bevy::{prelude::*, asset::LoadedFolder};
 
-use crate::{physics::Velocity, GameState, GameExtents, GameSettings};
+use crate::{physics::Velocity, GameState, GameBoundaries, GameSettings};
 
 #[derive(Resource, Default)]
 struct PlayerSpriteFolder(Handle<LoadedFolder>);
@@ -39,7 +39,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(OnExit(GameState::Loading), setup)
             .add_systems(Update, (
                 auto_flap.run_if(in_state(GameState::Idling)),
-                flap_input.run_if(not(in_state(GameState::Dead))),
+                flap_input.run_if(can_flap).run_if(not(in_state(GameState::Dead))),
                 translate_player, animate_sprite, animate_velocity
             ).chain())
             .add_systems(PostUpdate, bounds_collision);
@@ -121,6 +121,18 @@ fn animate_sprite(
     });
 }
 
+fn can_flap(
+    query: Query<&Transform, With<Player>>,
+    game_boundaries: Res<GameBoundaries>,
+) -> bool {
+    for transform in query.iter() {
+        if transform.translation.y > game_boundaries.0.max.y {
+            return false;
+        }
+    }
+    return true;
+}
+
 fn flap_input(
     mut velocity: ResMut<Velocity>,
     mut next_state: ResMut<NextState<GameState>>,
@@ -161,18 +173,15 @@ fn bounds_collision(
     mut next_state: ResMut<NextState<GameState>>,
     game_settings: Res<GameSettings>,
     windows: Query<&Window>,
-    game_extents: Res<GameExtents>,
+    game_boundaries: Res<GameBoundaries>,
 ) {
     query.for_each_mut(|mut transform| {
         let primary_window = windows.single();
-        if transform.translation.y < -game_extents.0.y {
-            transform.translation.y = -game_extents.0.y;
+        if transform.translation.y < game_boundaries.0.min.y {
+            transform.translation.y = game_boundaries.0.min.y;
             velocity.0 = Vec2::ZERO;
 
             next_state.set(GameState::Dead);
-        } else if transform.translation.y > primary_window.height() * 0.5 * game_settings.scaling {
-            transform.translation.y = primary_window.height() * 0.5 * game_settings.scaling;
-            velocity.y = 0.0;
         }
     });
 }

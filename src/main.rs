@@ -6,7 +6,7 @@ mod ground;
 mod anchor;
 
 use anchor::AnchorPlugin;
-use bevy::{prelude::*, asset::LoadedFolder, sprite::{MaterialMesh2dBundle, Mesh2dHandle}};
+use bevy::{prelude::*, asset::LoadedFolder, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, render::view::window};
 use ground::GroundPlugin;
 use physics::{PhysicsPlugin, Velocity};
 use background::{BackgroundPlugin};
@@ -34,7 +34,7 @@ struct GameSettings {
 }
 
 #[derive(Resource, Default)]
-struct GameExtents(Vec2);
+struct GameBoundaries(Rect);
 
 fn main() {
     App::new()
@@ -64,12 +64,12 @@ fn main() {
         .insert_resource(GameSettings {
             scaling: 0.25,
         })
-        .insert_resource(GameExtents::default())
+        .insert_resource(GameBoundaries::default())
         .add_systems(Startup, setup)
         .add_systems(Update, (
             load_assets.run_if(in_state(GameState::Loading)),
         ))
-        .add_systems(PreUpdate, update_base_height)
+        .add_systems(PreUpdate, update_boundaries)
         .add_systems(PostUpdate, update_distance)
         .add_systems(PostUpdate, update_debug)
         .run();
@@ -85,7 +85,7 @@ fn setup(
 
     commands.spawn((SpriteBundle {
         sprite: Sprite {
-            custom_size: Some(Vec2::new(1.0, 1.0)),
+            custom_size: Some(Vec2::new(10.0, 10.0)),
             ..default()
         },
         ..default()
@@ -129,24 +129,25 @@ fn update_distance(
     distance_traveled.0 += velocity.x * time.delta_seconds();
 }
 
-fn update_base_height(
-    mut game_extents: ResMut<GameExtents>,
+fn update_boundaries(
+    mut game_boundaries: ResMut<GameBoundaries>,
     game_settings: Res<GameSettings>,
     windows: Query<&Window>,
 ) {
     let primary_window = windows.single();
     let window_size = Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
-    game_extents.0 = Vec2::new(
-        window_size.x * 0.5,
-        window_size.y * 0.5 * 0.5,
-    );
+    let window_extents = window_size * 0.5;
+    game_boundaries.0 = Rect {
+        min: Vec2::new(-window_extents.x, -window_extents.y * 0.5),
+        max: Vec2::new(window_extents.x, window_extents.y - 20.0),
+    };
 }
 
 fn update_debug(
     mut query: Query<&mut Transform, With<Debug>>,
-    game_extents: Res<GameExtents>,
+    game_boundaries: Res<GameBoundaries>,
 ) {
     query.for_each_mut(|mut transform| {
-        transform.translation.y = game_extents.0.y;
+        transform.translation.y = game_boundaries.0.max.y;
     });
 }
