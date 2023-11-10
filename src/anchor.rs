@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::GameBoundaries;
+use crate::game::GameBoundaries;
 
 #[derive(Component, Default)]
 pub struct AnchoredSprite {
@@ -26,8 +26,8 @@ fn reposition(
         let material = materials.get(material_handle).unwrap();
         let image_handle = material.texture.clone().unwrap();
         if let Some(image) = images.get(image_handle) {
-            let game_size = game_boundaries.0.max - game_boundaries.0.min;
-            let anchor_position = game_boundaries.0.min
+            let game_size = game_boundaries.max - game_boundaries.min;
+            let anchor_position = game_boundaries.min
                 + game_size * (anchored_sprite.position.as_vec() + Vec2::new(0.5, 0.5));
             let pivot_offset = image.size_f32() * anchored_sprite.pivot.as_vec();
             transform.translation =

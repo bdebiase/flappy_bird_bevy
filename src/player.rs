@@ -1,6 +1,6 @@
 use bevy::{asset::LoadedFolder, prelude::*};
 
-use crate::{physics::Velocity, GameBoundaries, GameState};
+use crate::{physics::Velocity, game::{GameBoundaries, GameState}};
 
 #[derive(Resource, Default)]
 struct PlayerSpriteFolder(Handle<LoadedFolder>);
@@ -105,7 +105,7 @@ fn translate_player(
     time: Res<Time>,
 ) {
     query.for_each_mut(|mut transform| {
-        transform.translation.y += velocity.0.y * time.delta_seconds();
+        transform.translation.y += velocity.y * time.delta_seconds();
     });
 }
 
@@ -131,7 +131,7 @@ fn animate_sprite(
 
 fn can_flap(query: Query<&Transform, With<Player>>, game_boundaries: Res<GameBoundaries>) -> bool {
     for transform in query.iter() {
-        if transform.translation.y > game_boundaries.0.max.y {
+        if transform.translation.y > game_boundaries.max.y {
             return false;
         }
     }
@@ -186,8 +186,8 @@ fn bounds_collision(
     game_boundaries: Res<GameBoundaries>,
 ) {
     query.for_each_mut(|mut transform| {
-        if transform.translation.y < game_boundaries.0.min.y {
-            transform.translation.y = game_boundaries.0.min.y;
+        if transform.translation.y < game_boundaries.min.y {
+            transform.translation.y = game_boundaries.min.y;
             velocity.0 = Vec2::ZERO;
 
             next_state.set(GameState::Dead);

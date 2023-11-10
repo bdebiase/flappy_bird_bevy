@@ -3,7 +3,7 @@ use bevy::{
     sprite::Mesh2dHandle,
 };
 
-use crate::{DistanceTraveled, GameSettings};
+use crate::game::{DistanceTraveled, GameSettings};
 
 #[derive(Component)]
 pub struct Tiling {

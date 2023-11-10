@@ -25,7 +25,7 @@ impl DerefMut for Gravity {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Deref, DerefMut)]
 pub struct Velocity(pub Vec2);
 
 // #[derive(Component, Default)]
@@ -34,20 +34,6 @@ pub struct Velocity(pub Vec2);
 impl From<Vec2> for Velocity {
     fn from(value: Vec2) -> Self {
         Velocity(value)
-    }
-}
-
-impl Deref for Velocity {
-    type Target = Vec2;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Velocity {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 

@@ -6,7 +6,7 @@ use bevy::{
     sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle},
 };
 
-use crate::{anchor::AnchoredSprite, tiling::Tiling, GameState};
+use crate::{anchor::AnchoredSprite, tiling::Tiling, game::GameState};
 
 #[derive(Component)]
 pub struct Ground;
