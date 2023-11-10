@@ -58,9 +58,7 @@ struct Collider {
 
 impl From<Vec2> for Collider {
     fn from(value: Vec2) -> Self {
-        Self {
-            size: value,
-        }
+        Self { size: value }
     }
 }
 
@@ -68,6 +66,18 @@ impl From<Vec2> for Collider {
 pub struct CollisionEvent {
     pub entity_a: Entity,
     pub entity_b: Entity,
+}
+
+pub struct PhysicsPlugin;
+
+impl Plugin for PhysicsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<CollisionEvent>()
+            .insert_resource(Gravity::from(Vec2::new(0.0, -250.0)))
+            .insert_resource(Velocity::default())
+            .add_systems(Update, (apply_gravity).chain())
+            .add_systems(PostUpdate, check_collisions);
+    }
 }
 
 fn apply_gravity(mut velocity: ResMut<Velocity>, gravity: Res<Gravity>, time: Res<Time>) {
@@ -82,7 +92,7 @@ fn apply_velocity(mut query: Query<&mut Transform>, velocity: Res<Velocity>, tim
 
 fn check_collisions(
     collider_query: Query<(Entity, &Collider, &Transform)>,
-    mut collision_events: EventWriter<CollisionEvent>, // Event writer to send collision events
+    mut collision_events: EventWriter<CollisionEvent>,
 ) {
     let colliders = collider_query.iter().collect::<Vec<_>>();
 
@@ -102,17 +112,5 @@ fn check_collisions(
                 });
             }
         }
-    }
-}
-
-pub struct PhysicsPlugin;
-
-impl Plugin for PhysicsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_event::<CollisionEvent>()
-            .insert_resource(Gravity::from(Vec2::new(0.0, -250.0)))
-            .insert_resource(Velocity::default())
-            .add_systems(Update, (apply_gravity).chain())
-            .add_systems(PostUpdate, check_collisions);
     }
 }

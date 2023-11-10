@@ -27,11 +27,11 @@ fn reposition(
         let image_handle = material.texture.clone().unwrap();
         if let Some(image) = images.get(image_handle) {
             let game_size = game_boundaries.0.max - game_boundaries.0.min;
-            let anchor_position = game_boundaries.0.min + game_size * (anchored_sprite.position.as_vec() + Vec2::new(0.5, 0.5));
+            let anchor_position = game_boundaries.0.min
+                + game_size * (anchored_sprite.position.as_vec() + Vec2::new(0.5, 0.5));
             let pivot_offset = image.size_f32() * anchored_sprite.pivot.as_vec();
-            println!("{:?}", game_boundaries.0);
-
-            transform.translation = (anchor_position + pivot_offset).extend(transform.translation.z);
+            transform.translation =
+                (anchor_position + pivot_offset).extend(transform.translation.z);
         }
     });
 }

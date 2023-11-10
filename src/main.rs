@@ -1,15 +1,15 @@
-mod physics;
+mod anchor;
 mod background;
+mod ground;
+mod physics;
 mod player;
 mod tiling;
-mod ground;
-mod anchor;
 
 use anchor::AnchorPlugin;
-use bevy::{prelude::*, asset::LoadedFolder, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, render::view::window};
+use background::BackgroundPlugin;
+use bevy::{asset::LoadedFolder, prelude::*};
 use ground::GroundPlugin;
 use physics::{PhysicsPlugin, Velocity};
-use background::{BackgroundPlugin};
 use player::PlayerPlugin;
 use tiling::TilingPlugin;
 
@@ -61,35 +61,31 @@ fn main() {
         .insert_resource(ClearColor(Color::hex("#4EC0CA").unwrap()))
         .insert_resource(Velocity::from(Vec2::new(50.0, 0.0)))
         .insert_resource(DistanceTraveled(0.0))
-        .insert_resource(GameSettings {
-            scaling: 0.25,
-        })
+        .insert_resource(GameSettings { scaling: 0.25 })
         .insert_resource(GameBoundaries::default())
         .add_systems(Startup, setup)
-        .add_systems(Update, (
-            load_assets.run_if(in_state(GameState::Loading)),
-        ))
+        .add_systems(Update, (load_assets.run_if(in_state(GameState::Loading)),))
         .add_systems(PreUpdate, update_boundaries)
         .add_systems(PostUpdate, update_distance)
         .add_systems(PostUpdate, update_debug)
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    game_settings: Res<GameSettings>,
-) {
+fn setup(mut commands: Commands, game_settings: Res<GameSettings>) {
     let mut camera_bundle = Camera2dBundle::default();
     camera_bundle.projection.scale *= game_settings.scaling;
     commands.spawn(camera_bundle);
 
-    commands.spawn((SpriteBundle {
-        sprite: Sprite {
-            custom_size: Some(Vec2::new(10.0, 10.0)),
+    commands.spawn((
+        SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(10.0, 10.0)),
+                ..default()
+            },
             ..default()
         },
-        ..default()
-    }, Debug));
+        Debug,
+    ));
 }
 
 fn load_assets(
@@ -103,12 +99,12 @@ fn load_assets(
             AssetEvent::LoadedWithDependencies { id } => {
                 println!("Loaded asset with dependencies with id: {}", id);
                 *assets_to_load += 1;
-            },
+            }
             AssetEvent::Added { id } => {
                 println!("Added asset with id: {}", id);
                 *assets_loaded += 1;
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 
@@ -135,7 +131,8 @@ fn update_boundaries(
     windows: Query<&Window>,
 ) {
     let primary_window = windows.single();
-    let window_size = Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
+    let window_size =
+        Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
     let window_extents = window_size * 0.5;
     game_boundaries.0 = Rect {
         min: Vec2::new(-window_extents.x, -window_extents.y * 0.5),

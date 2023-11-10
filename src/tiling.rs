@@ -1,6 +1,9 @@
-use bevy::{prelude::*, sprite::{Material2d, MaterialMesh2dBundle, Material2dPlugin, Mesh2dHandle}, render::{render_resource::{AsBindGroup, ShaderRef}, texture::{ImageSampler, ImageLoaderSettings, ImageAddressMode, ImageSamplerDescriptor}, mesh::VertexAttributeValues}, window::WindowResized};
+use bevy::{
+    prelude::*,
+    sprite::Mesh2dHandle,
+};
 
-use crate::{DistanceTraveled, GameState, GameSettings};
+use crate::{DistanceTraveled, GameSettings};
 
 #[derive(Component)]
 pub struct Tiling {
@@ -24,7 +27,12 @@ impl Plugin for TilingPlugin {
 }
 
 fn resize_tiling(
-    mut query: Query<(&mut Transform, &Mesh2dHandle, &Handle<ColorMaterial>, &Tiling)>,
+    mut query: Query<(
+        &mut Transform,
+        &Mesh2dHandle,
+        &Handle<ColorMaterial>,
+        &Tiling,
+    )>,
     mut meshes: ResMut<Assets<Mesh>>,
     windows: Query<&Window>,
     materials: Res<Assets<ColorMaterial>>,
@@ -37,7 +45,8 @@ fn resize_tiling(
         let image_handle = material.texture.clone().unwrap();
         if let Some(image) = images.get(image_handle) {
             let primary_window = windows.single();
-            let window_size = Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
+            let window_size =
+                Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
             let texture_size = image.size_f32();
             let texture_aspect_ratio = texture_size.y / texture_size.x;
 

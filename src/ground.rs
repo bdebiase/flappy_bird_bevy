@@ -1,6 +1,12 @@
-use bevy::{prelude::*, sprite::{Mesh2dHandle, MaterialMesh2dBundle, Anchor}, render::texture::{ImageSamplerDescriptor, ImageAddressMode, ImageLoaderSettings, ImageSampler}};
+use bevy::{
+    prelude::*,
+    render::texture::{
+        ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor,
+    },
+    sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle},
+};
 
-use crate::{GameState, tiling::Tiling, anchor::AnchoredSprite};
+use crate::{anchor::AnchoredSprite, tiling::Tiling, GameState};
 
 #[derive(Component)]
 pub struct Ground;
@@ -10,7 +16,7 @@ pub struct GroundPlugin;
 impl Plugin for GroundPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnExit(GameState::Loading), setup);
-            // .add_systems(Update, reposition_ground);
+        // .add_systems(Update, reposition_ground);
     }
 }
 
@@ -33,10 +39,17 @@ fn setup(
     };
 
     let texture_handle = asset_server.load_with_settings("sprites/ground.png", settings);
-    commands.spawn((MaterialMesh2dBundle {
-        mesh: mesh_handle,
-        material: materials.add(ColorMaterial::from(texture_handle)),
-        transform: Transform::from_translation(Vec3::Z * 0.0),
-        ..default()
-    }, AnchoredSprite { position: Anchor::BottomCenter, pivot: Anchor::BottomCenter }, Tiling::default()));
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: mesh_handle,
+            material: materials.add(ColorMaterial::from(texture_handle)),
+            transform: Transform::from_translation(Vec3::Z * 0.0),
+            ..default()
+        },
+        AnchoredSprite {
+            position: Anchor::BottomCenter,
+            pivot: Anchor::BottomCenter,
+        },
+        Tiling::default(),
+    ));
 }

@@ -1,6 +1,6 @@
-use bevy::{prelude::*, asset::LoadedFolder};
+use bevy::{asset::LoadedFolder, prelude::*};
 
-use crate::{physics::Velocity, GameState, GameBoundaries, GameSettings};
+use crate::{physics::Velocity, GameBoundaries, GameState};
 
 #[derive(Resource, Default)]
 struct PlayerSpriteFolder(Handle<LoadedFolder>);
@@ -37,11 +37,19 @@ impl Plugin for PlayerPlugin {
         app.insert_resource(FlapForce(100.0))
             .add_systems(OnEnter(GameState::Loading), load_textures)
             .add_systems(OnExit(GameState::Loading), setup)
-            .add_systems(Update, (
-                auto_flap.run_if(in_state(GameState::Idling)),
-                flap_input.run_if(can_flap).run_if(not(in_state(GameState::Dead))),
-                translate_player, animate_sprite, animate_velocity
-            ).chain())
+            .add_systems(
+                Update,
+                (
+                    auto_flap.run_if(in_state(GameState::Idling)),
+                    flap_input
+                        .run_if(can_flap)
+                        .run_if(not(in_state(GameState::Dead))),
+                    translate_player,
+                    animate_sprite,
+                    animate_velocity,
+                )
+                    .chain(),
+            )
             .add_systems(PostUpdate, bounds_collision);
     }
 }
@@ -121,10 +129,7 @@ fn animate_sprite(
     });
 }
 
-fn can_flap(
-    query: Query<&Transform, With<Player>>,
-    game_boundaries: Res<GameBoundaries>,
-) -> bool {
+fn can_flap(query: Query<&Transform, With<Player>>, game_boundaries: Res<GameBoundaries>) -> bool {
     for transform in query.iter() {
         if transform.translation.y > game_boundaries.0.max.y {
             return false;
@@ -161,9 +166,16 @@ fn auto_flap(
     })
 }
 
-fn animate_velocity(mut query: Query<&mut Transform, With<Player>>, velocity: Res<Velocity>, time: Res<Time>) {
+fn animate_velocity(
+    mut query: Query<&mut Transform, With<Player>>,
+    velocity: Res<Velocity>,
+    time: Res<Time>,
+) {
     query.for_each_mut(|mut transform| {
-        transform.rotation = transform.rotation.lerp(Quat::from_rotation_z(velocity.y.atan2(velocity.x)), 25.0 * time.delta_seconds());
+        transform.rotation = transform.rotation.lerp(
+            Quat::from_rotation_z(velocity.y.atan2(velocity.x)),
+            25.0 * time.delta_seconds(),
+        );
     });
 }
 
@@ -171,12 +183,9 @@ fn bounds_collision(
     mut query: Query<&mut Transform, With<Player>>,
     mut velocity: ResMut<Velocity>,
     mut next_state: ResMut<NextState<GameState>>,
-    game_settings: Res<GameSettings>,
-    windows: Query<&Window>,
     game_boundaries: Res<GameBoundaries>,
 ) {
     query.for_each_mut(|mut transform| {
-        let primary_window = windows.single();
         if transform.translation.y < game_boundaries.0.min.y {
             transform.translation.y = game_boundaries.0.min.y;
             velocity.0 = Vec2::ZERO;
