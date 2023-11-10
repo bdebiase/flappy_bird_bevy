@@ -1,10 +1,11 @@
 mod anchor;
 mod background;
+mod game;
 mod ground;
 mod physics;
+mod pipes;
 mod player;
 mod tiling;
-mod game;
 
 use bevy::prelude::*;
 use game::GamePlugins;

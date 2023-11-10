@@ -1,6 +1,18 @@
-use bevy::{prelude::*, app::PluginGroupBuilder, asset::LoadedFolder};
+use bevy::{app::PluginGroupBuilder, asset::LoadedFolder, prelude::*};
+use bevy_asset_loader::{
+    asset_collection::AssetCollection,
+    loading_state::{LoadingState, LoadingStateAppExt},
+};
 
-use crate::{ground::GroundPlugin, player::PlayerPlugin, background::BackgroundPlugin, anchor::AnchorPlugin, tiling::TilingPlugin, physics::{PhysicsPlugin, Velocity}};
+use crate::{
+    anchor::AnchorPlugin,
+    background::BackgroundPlugin,
+    ground::GroundPlugin,
+    physics::{PhysicsPlugin, Velocity},
+    pipes::PipesPlugin,
+    player::PlayerPlugin,
+    tiling::TilingPlugin,
+};
 
 #[derive(Component)]
 struct Debug;
@@ -33,9 +45,11 @@ impl PluginGroup for GamePlugins {
             .add(AnchorPlugin)
             .add(TilingPlugin)
             .add(PhysicsPlugin)
+            .add(GamePlugin)
             .add(BackgroundPlugin)
             .add(GroundPlugin)
             .add(PlayerPlugin)
+            .add(PipesPlugin)
     }
 }
 
@@ -44,12 +58,15 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<GameState>()
+            .add_loading_state(
+                LoadingState::new(GameState::Loading).continue_to_state(GameState::Idling),
+            )
             .insert_resource(ClearColor(Color::hex("#4EC0CA").unwrap()))
             .insert_resource(Velocity::from(Vec2::new(50.0, 0.0)))
             .insert_resource(DistanceTraveled(0.0))
             .insert_resource(GameSettings { scaling: 0.25 })
-            .insert_resource(GameBoundaries::default()).add_systems(Startup, setup)
-            .add_systems(Update, (load_assets.run_if(in_state(GameState::Loading)),))
+            .insert_resource(GameBoundaries::default())
+            .add_systems(Startup, setup)
             .add_systems(PreUpdate, update_boundaries)
             .add_systems(PostUpdate, update_distance)
             .add_systems(PostUpdate, update_debug);
@@ -71,31 +88,6 @@ fn setup(mut commands: Commands, game_settings: Res<GameSettings>) {
         },
         Debug,
     ));
-}
-
-fn load_assets(
-    mut events: EventReader<AssetEvent<LoadedFolder>>,
-    mut next_state: ResMut<NextState<GameState>>,
-    mut assets_to_load: Local<i32>,
-    mut assets_loaded: Local<i32>,
-) {
-    for event in events.read() {
-        match event {
-            AssetEvent::LoadedWithDependencies { id } => {
-                println!("Loaded asset with dependencies with id: {}", id);
-                *assets_to_load += 1;
-            }
-            AssetEvent::Added { id } => {
-                println!("Added asset with id: {}", id);
-                *assets_loaded += 1;
-            }
-            _ => {}
-        }
-    }
-
-    if *assets_loaded == *assets_to_load && *assets_to_load != 0 {
-        next_state.set(GameState::Idling);
-    }
 }
 
 fn update_distance(

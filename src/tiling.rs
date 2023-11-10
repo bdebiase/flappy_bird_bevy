@@ -1,9 +1,10 @@
 use bevy::{
     prelude::*,
+    render::texture::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor},
     sprite::Mesh2dHandle,
 };
 
-use crate::game::{DistanceTraveled, GameSettings};
+use crate::game::{DistanceTraveled, GameSettings, GameState};
 
 #[derive(Component)]
 pub struct Tiling {
@@ -22,8 +23,29 @@ pub struct TilingPlugin;
 
 impl Plugin for TilingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, resize_tiling);
+        app.add_systems(Update, tile_textures)
+            .add_systems(PostUpdate, resize_tiling);
     }
+}
+
+fn tile_textures(
+    mut images: ResMut<Assets<Image>>,
+    materials: Res<Assets<ColorMaterial>>,
+    query: Query<&Handle<ColorMaterial>, (With<Tiling>, Added<Handle<ColorMaterial>>)>,
+) {
+    query.for_each(|material_handle| {
+        let material = materials.get(material_handle).unwrap();
+        if let Some(texture_handle) = &material.texture {
+            println!("TILE!");
+            let texture = images.get_mut(texture_handle).unwrap();
+            let sampler_desc = ImageSamplerDescriptor {
+                address_mode_u: ImageAddressMode::Repeat,
+                address_mode_v: ImageAddressMode::Repeat,
+                ..Default::default()
+            };
+            texture.sampler = ImageSampler::Descriptor(sampler_desc.clone());
+        }
+    });
 }
 
 fn resize_tiling(

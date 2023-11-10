@@ -1,12 +1,19 @@
-use bevy::{asset::LoadedFolder, prelude::*};
+use bevy::prelude::*;
+use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
 
-use crate::{physics::Velocity, game::{GameBoundaries, GameState}};
-
-#[derive(Resource, Default)]
-struct PlayerSpriteFolder(Handle<LoadedFolder>);
+use crate::{
+    game::{GameBoundaries, GameState},
+    physics::Velocity,
+};
 
 #[derive(Component, Default)]
 pub struct Player;
+
+#[derive(AssetCollection, Resource)]
+struct PlayerAssets {
+    #[asset(path = "sprites/bird", collection(typed))]
+    folder: Vec<Handle<Image>>,
+}
 
 #[derive(Component, Default)]
 pub struct AnimationIndices {
@@ -34,8 +41,8 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(FlapForce(100.0))
-            .add_systems(OnEnter(GameState::Loading), load_textures)
+        app.add_collection_to_loading_state::<_, PlayerAssets>(GameState::Loading)
+            .insert_resource(FlapForce(100.0))
             .add_systems(OnExit(GameState::Loading), setup)
             .add_systems(
                 Update,
@@ -54,22 +61,15 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn load_textures(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.insert_resource(PlayerSpriteFolder(asset_server.load_folder("sprites/bird")));
-}
-
 fn setup(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut textures: ResMut<Assets<Image>>,
-    player_sprite_handles: Res<PlayerSpriteFolder>,
-    asset_server: Res<AssetServer>,
-    loaded_folders: Res<Assets<LoadedFolder>>,
+    player_assets: Res<PlayerAssets>,
 ) {
     let mut texture_atlas_builder = TextureAtlasBuilder::default();
-    let loaded_folder = loaded_folders.get(&player_sprite_handles.0).unwrap();
-    for handle in loaded_folder.handles.iter() {
-        let id = handle.id().typed_unchecked::<Image>();
+    for handle in player_assets.folder.iter() {
+        let id = handle.id();
         let Some(texture) = textures.get(id) else {
             warn!(
                 "{:?} did not resolve to an `Image` asset.",
@@ -82,8 +82,8 @@ fn setup(
     }
 
     let texture_atlas = texture_atlas_builder.finish(&mut textures).unwrap();
-    let vendor_handle = asset_server.get_handle("sprites/bird/bird0.png").unwrap();
-    let vendor_index = texture_atlas.get_texture_index(&vendor_handle).unwrap();
+    let vendor_handle = player_assets.folder.get(0).unwrap();
+    let vendor_index = texture_atlas.get_texture_index(vendor_handle).unwrap();
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     commands.spawn(PlayerBundle {
