@@ -25,11 +25,8 @@ impl DerefMut for Gravity {
     }
 }
 
-#[derive(Resource, Default, Deref, DerefMut)]
+#[derive(Component, Default, Deref, DerefMut)]
 pub struct Velocity(pub Vec2);
-
-// #[derive(Component, Default)]
-// pub struct Velocity(Vec2);
 
 impl From<Vec2> for Velocity {
     fn from(value: Vec2) -> Self {
@@ -60,19 +57,20 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CollisionEvent>()
             .insert_resource(Gravity::from(Vec2::new(0.0, -250.0)))
-            .insert_resource(Velocity::default())
-            .add_systems(Update, (apply_gravity).chain())
+            .add_systems(Update, (apply_gravity, apply_velocity).chain())
             .add_systems(PostUpdate, check_collisions);
     }
 }
 
-fn apply_gravity(mut velocity: ResMut<Velocity>, gravity: Res<Gravity>, time: Res<Time>) {
-    velocity.0 += gravity.0 * time.delta_seconds();
+fn apply_gravity(mut query: Query<&mut Velocity>, gravity: Res<Gravity>, time: Res<Time>) {
+    query.for_each_mut(|mut velocity| {
+        velocity.0 += gravity.0 * time.delta_seconds();
+    });
 }
 
-fn apply_velocity(mut query: Query<&mut Transform>, velocity: Res<Velocity>, time: Res<Time>) {
-    query.for_each_mut(|mut transform| {
-        transform.translation += velocity.0.extend(0.0) * time.delta_seconds();
+fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
+    query.for_each_mut(|(mut transform, velocity)| {
+        transform.translation += velocity.extend(0.0) * time.delta_seconds();
     });
 }
 

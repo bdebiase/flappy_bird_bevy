@@ -26,10 +26,8 @@ pub enum GameState {
 #[derive(Resource, Deref, DerefMut)]
 pub struct DistanceTraveled(pub f32);
 
-#[derive(Resource)]
-pub struct GameSettings {
-    pub scaling: f32,
-}
+#[derive(Resource, Deref, DerefMut)]
+pub struct GameSpeed(f32);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct GameBoundaries(Rect);
@@ -59,9 +57,8 @@ impl Plugin for GamePlugin {
                 LoadingState::new(GameState::Loading).continue_to_state(GameState::Idling),
             )
             .insert_resource(ClearColor(Color::hex("#4EC0CA").unwrap()))
-            .insert_resource(Velocity::from(Vec2::new(50.0, 0.0)))
+            .insert_resource(GameSpeed(50.0))
             .insert_resource(DistanceTraveled(0.0))
-            .insert_resource(GameSettings { scaling: 0.25 })
             .insert_resource(GameBoundaries::default())
             .add_systems(Startup, setup)
             .add_systems(PreUpdate, update_boundaries)
@@ -70,9 +67,9 @@ impl Plugin for GamePlugin {
     }
 }
 
-fn setup(mut commands: Commands, game_settings: Res<GameSettings>) {
+fn setup(mut commands: Commands) {
     let mut camera_bundle = Camera2dBundle::default();
-    camera_bundle.projection.scale *= game_settings.scaling;
+    camera_bundle.projection.scale *= 0.25;
     commands.spawn(camera_bundle);
 
     commands.spawn((
@@ -90,13 +87,13 @@ fn setup(mut commands: Commands, game_settings: Res<GameSettings>) {
 fn update_distance(
     mut distance_traveled: ResMut<DistanceTraveled>,
     game_state: Res<State<GameState>>,
-    velocity: Res<Velocity>,
+    game_speed: Res<GameSpeed>,
     time: Res<Time>,
 ) {
     if *game_state == GameState::Dead {
         return;
     }
-    distance_traveled.0 += velocity.x * time.delta_seconds();
+    distance_traveled.0 += game_speed.0 * time.delta_seconds();
 }
 
 fn update_boundaries(

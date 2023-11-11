@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
 
 use crate::{
-    game::{GameBoundaries, GameState},
+    game::{GameBoundaries, GameState, GameSpeed},
     physics::Velocity,
 };
 
@@ -32,6 +32,7 @@ pub struct PlayerBundle {
     pub player: Player,
     pub animation_indices: AnimationIndices,
     pub animation_timer: AnimationTimer,
+    pub velocity: Velocity,
 
     #[bundle()]
     pub sprite_sheet_bundle: SpriteSheetBundle,
@@ -51,7 +52,6 @@ impl Plugin for PlayerPlugin {
                     flap_input
                         .run_if(can_flap)
                         .run_if(not(in_state(GameState::Dead))),
-                    translate_player,
                     animate_sprite,
                     animate_velocity,
                 )
@@ -99,16 +99,6 @@ fn setup(
     });
 }
 
-fn translate_player(
-    mut query: Query<&mut Transform, With<Player>>,
-    velocity: Res<Velocity>,
-    time: Res<Time>,
-) {
-    query.for_each_mut(|mut transform| {
-        transform.translation.y += velocity.y * time.delta_seconds();
-    });
-}
-
 fn animate_sprite(
     mut query: Query<(
         &mut AnimationTimer,
@@ -139,53 +129,53 @@ fn can_flap(query: Query<&Transform, With<Player>>, game_boundaries: Res<GameBou
 }
 
 fn flap_input(
-    mut velocity: ResMut<Velocity>,
+    mut query: Query<&mut Velocity, With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     game_state: Res<State<GameState>>,
     keyboard_input: Res<Input<KeyCode>>,
     flap_force: Res<FlapForce>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::Space) {
-        velocity.y = flap_force.0;
-
-        if *game_state == GameState::Idling {
-            next_state.set(GameState::Playing);
+    query.for_each_mut(|mut velocity| {
+        if keyboard_input.just_pressed(KeyCode::Space) {
+            velocity.y = flap_force.0;
+    
+            if *game_state == GameState::Idling {
+                next_state.set(GameState::Playing);
+            }
         }
-    }
+    });
 }
 
 fn auto_flap(
-    mut velocity: ResMut<Velocity>,
-    query: Query<&Transform, With<Player>>,
+    mut query: Query<(&mut Velocity, &Transform), With<Player>>,
     flap_force: Res<FlapForce>,
 ) {
-    query.for_each(|transform| {
+    query.for_each_mut(|(mut velocity, transform)| {
         if transform.translation.y < -0.0 && velocity.y < 0.0 {
             velocity.y = flap_force.0;
         }
-    })
+    });
 }
 
 fn animate_velocity(
-    mut query: Query<&mut Transform, With<Player>>,
-    velocity: Res<Velocity>,
+    mut query: Query<(&mut Transform, &Velocity), With<Player>>,
+    game_speed: Res<GameSpeed>,
     time: Res<Time>,
 ) {
-    query.for_each_mut(|mut transform| {
+    query.for_each_mut(|(mut transform, velocity)| {
         transform.rotation = transform.rotation.lerp(
-            Quat::from_rotation_z(velocity.y.atan2(velocity.x)),
+            Quat::from_rotation_z(velocity.y.atan2(**game_speed)),
             25.0 * time.delta_seconds(),
         );
     });
 }
 
 fn bounds_collision(
-    mut query: Query<&mut Transform, With<Player>>,
-    mut velocity: ResMut<Velocity>,
+    mut query: Query<(&mut Transform, &mut Velocity), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     game_boundaries: Res<GameBoundaries>,
 ) {
-    query.for_each_mut(|mut transform| {
+    query.for_each_mut(|(mut transform, mut velocity)| {
         if transform.translation.y < game_boundaries.min.y {
             transform.translation.y = game_boundaries.min.y;
             velocity.0 = Vec2::ZERO;
