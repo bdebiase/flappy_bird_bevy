@@ -1,13 +1,10 @@
 use bevy::{
     prelude::*,
-    render::texture::{
-        ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor,
-    },
     sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
 
-use crate::{anchor::AnchoredSprite, game::GameState, tiling::Tiling};
+use crate::{anchor::AnchoredSprite, game::GameState, tiling::{Tiling, Parallax}};
 
 #[derive(Component)]
 pub struct Ground;
@@ -36,15 +33,6 @@ fn setup(
     let mesh = Mesh::from(shape::Quad::default());
     let mesh_handle: Mesh2dHandle = meshes.add(mesh).into();
 
-    let sampler_desc = ImageSamplerDescriptor {
-        address_mode_u: ImageAddressMode::Repeat,
-        address_mode_v: ImageAddressMode::Repeat,
-        ..Default::default()
-    };
-    let settings = move |s: &mut ImageLoaderSettings| {
-        s.sampler = ImageSampler::Descriptor(sampler_desc.clone());
-    };
-
     commands.spawn((
         MaterialMesh2dBundle {
             mesh: mesh_handle,
@@ -57,5 +45,6 @@ fn setup(
             pivot: Anchor::BottomCenter,
         },
         Tiling::default(),
+        Parallax::default(),
     ));
 }

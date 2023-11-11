@@ -1,8 +1,5 @@
-use bevy::{app::PluginGroupBuilder, asset::LoadedFolder, prelude::*};
-use bevy_asset_loader::{
-    asset_collection::AssetCollection,
-    loading_state::{LoadingState, LoadingStateAppExt},
-};
+use bevy::{app::PluginGroupBuilder, prelude::*};
+use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 
 use crate::{
     anchor::AnchorPlugin,
@@ -104,16 +101,13 @@ fn update_distance(
 
 fn update_boundaries(
     mut game_boundaries: ResMut<GameBoundaries>,
-    game_settings: Res<GameSettings>,
-    windows: Query<&Window>,
+    projection_query: Query<&OrthographicProjection>,
 ) {
-    let primary_window = windows.single();
-    let window_size =
-        Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
-    let window_extents = window_size * 0.5;
+    let projection = projection_query.single();
+    let view_extents = Vec2::new(projection.area.width(), projection.area.height()) * 0.5;
     game_boundaries.0 = Rect {
-        min: Vec2::new(-window_extents.x, -window_extents.y * 0.5),
-        max: Vec2::new(window_extents.x, window_extents.y - 20.0),
+        min: Vec2::new(-view_extents.x, -view_extents.y * 0.5),
+        max: Vec2::new(view_extents.x, view_extents.y - 20.0),
     };
 }
 

@@ -2,14 +2,11 @@ use std::f32::consts::PI;
 
 use bevy::{
     prelude::*,
-    render::texture::{
-        ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor,
-    },
     sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
 
-use crate::{anchor::AnchoredSprite, game::GameState, tiling::Tiling};
+use crate::{anchor::AnchoredSprite, game::GameState, tiling::{Tiling, Parallax}};
 
 #[derive(AssetCollection, Resource)]
 struct BackgroundAssets {
@@ -50,8 +47,9 @@ fn setup(
             position: Anchor::BottomCenter,
             pivot: Anchor::TopCenter,
         },
-        Tiling {
-            parallax_ratio: 1. / 4.,
+        Tiling::default(),
+        Parallax {
+            ratio: 1. / 4.,
         },
     ));
 
@@ -67,8 +65,9 @@ fn setup(
             position: Anchor::BottomCenter,
             pivot: Anchor::TopCenter,
         },
-        Tiling {
-            parallax_ratio: 1. / 8.,
+        Tiling::default(),
+        Parallax {
+            ratio: 1. / 8.,
         },
     ));
 
@@ -84,8 +83,9 @@ fn setup(
             position: Anchor::BottomCenter,
             pivot: Anchor::TopCenter,
         },
-        Tiling {
-            parallax_ratio: 1. / 16.,
+        Tiling::default(),
+        Parallax {
+            ratio: 1. / 16.,
         },
     ));
 
@@ -102,8 +102,9 @@ fn setup(
             position: Anchor::TopCenter,
             pivot: Anchor::TopCenter,
         },
-        Tiling {
-            parallax_ratio: -1. / 6.,
+        Tiling::default(),
+        Parallax {
+            ratio: -1. / 6.,
         },
     ));
 }

@@ -4,17 +4,22 @@ use bevy::{
     sprite::Mesh2dHandle,
 };
 
-use crate::game::{DistanceTraveled, GameSettings, GameState};
+use crate::game::DistanceTraveled;
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Tiling {
-    pub parallax_ratio: f32,
+    pub uv_offset: Vec2,
 }
 
-impl Default for Tiling {
+#[derive(Component)]
+pub struct Parallax {
+    pub ratio: f32,
+}
+
+impl Default for Parallax {
     fn default() -> Self {
         Self {
-            parallax_ratio: 1.0,
+            ratio: 1.0,
         }
     }
 }
@@ -23,8 +28,7 @@ pub struct TilingPlugin;
 
 impl Plugin for TilingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, tile_textures)
-            .add_systems(PostUpdate, resize_tiling);
+        app.add_systems(Update, (tile_textures, resize_tiling, scaling, parllax));
     }
 }
 
@@ -36,7 +40,6 @@ fn tile_textures(
     query.for_each(|material_handle| {
         let material = materials.get(material_handle).unwrap();
         if let Some(texture_handle) = &material.texture {
-            println!("TILE!");
             let texture = images.get_mut(texture_handle).unwrap();
             let sampler_desc = ImageSamplerDescriptor {
                 address_mode_u: ImageAddressMode::Repeat,
@@ -50,43 +53,60 @@ fn tile_textures(
 
 fn resize_tiling(
     mut query: Query<(
-        &mut Transform,
+        &mut Tiling,
         &Mesh2dHandle,
         &Handle<ColorMaterial>,
-        &Tiling,
     )>,
     mut meshes: ResMut<Assets<Mesh>>,
-    windows: Query<&Window>,
+    projection_query: Query<&OrthographicProjection>,
     materials: Res<Assets<ColorMaterial>>,
     images: Res<Assets<Image>>,
-    game_settings: Res<GameSettings>,
-    distance_traveled: Res<DistanceTraveled>,
 ) {
-    query.for_each_mut(|(mut transform, mesh_handle, material_handle, tiling)| {
+    let projection = projection_query.single();
+    let view_size = Vec2::new(projection.area.width(), projection.area.height());
+    query.for_each_mut(|(tiling, mesh_handle, material_handle)| {
         let material = materials.get(material_handle).unwrap();
         let image_handle = material.texture.clone().unwrap();
         if let Some(image) = images.get(image_handle) {
-            let primary_window = windows.single();
-            let window_size =
-                Vec2::new(primary_window.width(), primary_window.height()) * game_settings.scaling;
             let texture_size = image.size_f32();
-            let texture_aspect_ratio = texture_size.y / texture_size.x;
-
-            let tile_count_x = window_size.x / texture_size.x;
-            let uv_pan = distance_traveled.0 * tiling.parallax_ratio / texture_size.x;
-            let uvs: Vec<[f32; 2]> = vec![
-                [uv_pan, 1.0],
-                [uv_pan, 0.0],
-                [uv_pan + tile_count_x, 0.0],
-                [uv_pan + tile_count_x, 1.0],
+            let tile_count_x = view_size.x / texture_size.x;
+            let offset = tiling.uv_offset / image.size_f32();
+            let uvs = vec![
+                [offset.x, offset.y + 1.0],
+                [offset.x, offset.y],
+                [offset.x + tile_count_x, offset.y],
+                [offset.x + tile_count_x, offset.y + 1.0],
             ];
 
             let mesh = meshes.get_mut(mesh_handle.0.clone()).unwrap();
             mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-
-            let scale_x = window_size.x / tile_count_x;
-            transform.scale.x = window_size.x;
-            transform.scale.y = scale_x * texture_aspect_ratio;
         }
+    });
+}
+
+fn scaling(
+    mut query: Query<(&mut Transform, &Handle<ColorMaterial>), With<Tiling>>,
+    projection_query: Query<&OrthographicProjection>,
+    materials: Res<Assets<ColorMaterial>>,
+    images: Res<Assets<Image>>,
+) {
+    let projection = projection_query.single();
+    let view_size = Vec2::new(projection.area.width(), projection.area.height());
+    query.for_each_mut(|(mut transform, material_handle)| {
+        let material = materials.get(material_handle).unwrap();
+        let image_handle = material.texture.clone().unwrap();
+        if let Some(image) = images.get(image_handle) {
+            transform.scale.x = view_size.x;
+            transform.scale.y = image.size_f32().y;
+        }
+    });
+}
+
+fn parllax(
+    mut query: Query<(&mut Tiling, &Parallax)>,
+    distance_traveled: Res<DistanceTraveled>,
+) {
+    query.for_each_mut(|(mut tiling, parallax)| {
+        tiling.uv_offset.x = distance_traveled.0 * parallax.ratio;
     });
 }
