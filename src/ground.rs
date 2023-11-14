@@ -4,7 +4,11 @@ use bevy::{
 };
 use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
 
-use crate::{anchor::AnchoredSprite, game::GameState, tiling::{Tiling, Parallax}};
+use crate::{
+    anchor::AnchoredSprite,
+    game::GameState,
+    tiling::{Parallax, Tiling},
+};
 
 #[derive(Component)]
 pub struct Ground;
@@ -43,8 +47,12 @@ fn setup(
         AnchoredSprite {
             position: Anchor::BottomCenter,
             pivot: Anchor::BottomCenter,
+            stretch: true,
         },
-        Tiling::default(),
+        Tiling {
+            tile_x: true,
+            ..default()
+        },
         Parallax::default(),
     ));
 }

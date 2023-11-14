@@ -1,7 +1,10 @@
 mod anchor;
+mod animation;
 mod background;
 mod game;
 mod ground;
+mod menu;
+mod networking;
 mod physics;
 mod pipes;
 mod player;

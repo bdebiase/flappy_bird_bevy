@@ -1,6 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
-use bevy::{prelude::*, sprite::collide_aabb::collide};
+use bevy::{
+    prelude::*,
+    sprite::collide_aabb::{collide, Collision},
+};
 
 #[derive(Resource)]
 pub struct Gravity(Vec2);
@@ -25,6 +28,15 @@ impl DerefMut for Gravity {
     }
 }
 
+#[derive(Component, Deref, DerefMut)]
+pub struct GravityMultiplier(pub f32);
+
+impl Default for GravityMultiplier {
+    fn default() -> Self {
+        Self(1.0)
+    }
+}
+
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Velocity(pub Vec2);
 
@@ -35,8 +47,8 @@ impl From<Vec2> for Velocity {
 }
 
 #[derive(Component)]
-struct Collider {
-    size: Vec2,
+pub struct Collider {
+    pub size: Vec2,
 }
 
 impl From<Vec2> for Collider {
@@ -56,15 +68,23 @@ pub struct PhysicsPlugin;
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CollisionEvent>()
-            .insert_resource(Gravity::from(Vec2::new(0.0, -250.0)))
-            .add_systems(Update, (apply_gravity, apply_velocity).chain())
-            .add_systems(PostUpdate, check_collisions);
+            .insert_resource(Gravity::from(Vec2::new(0.0, -100.0)))
+            .add_systems(PreUpdate, check_collisions)
+            .add_systems(Update, (apply_gravity, apply_velocity));
     }
 }
 
-fn apply_gravity(mut query: Query<&mut Velocity>, gravity: Res<Gravity>, time: Res<Time>) {
-    query.for_each_mut(|mut velocity| {
-        velocity.0 += gravity.0 * time.delta_seconds();
+fn apply_gravity(
+    mut query: Query<(&mut Velocity, Option<&GravityMultiplier>)>,
+    gravity: Res<Gravity>,
+    time: Res<Time>,
+) {
+    query.for_each_mut(|(mut velocity, opt_multiplier)| {
+        let mut multiplier = 1.0;
+        if let Some(value) = opt_multiplier {
+            multiplier = **value;
+        }
+        **velocity += **gravity * multiplier * time.delta_seconds();
     });
 }
 
@@ -75,17 +95,17 @@ fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>
 }
 
 fn check_collisions(
-    collider_query: Query<(Entity, &Collider, &Transform)>,
     mut collision_events: EventWriter<CollisionEvent>,
+    collider_query: Query<(Entity, &Collider, &GlobalTransform)>,
 ) {
     let colliders = collider_query.iter().collect::<Vec<_>>();
 
     for (i, (entity_a, collider_a, transform_a)) in colliders.iter().enumerate() {
         for (entity_b, collider_b, transform_b) in colliders.iter().skip(i + 1) {
             let collision = collide(
-                transform_a.translation,
+                transform_a.translation(),
                 collider_a.size,
-                transform_b.translation,
+                transform_b.translation(),
                 collider_b.size,
             );
 
@@ -97,4 +117,41 @@ fn check_collisions(
             }
         }
     }
+}
+
+fn draw_debug(mut gizmos: Gizmos, query: Query<(&GlobalTransform, &Collider)>) {
+    query.for_each(|(transform, collider)| {
+        gizmos.line_2d(
+            transform.translation().truncate()
+                - Vec2::X * collider.size * 0.5
+                - Vec2::Y * collider.size * 0.5,
+            transform.translation().truncate() - Vec2::X * collider.size * 0.5
+                + Vec2::Y * collider.size * 0.5,
+            Color::MIDNIGHT_BLUE,
+        );
+        gizmos.line_2d(
+            transform.translation().truncate() + Vec2::X * collider.size * 0.5
+                - Vec2::Y * collider.size * 0.5,
+            transform.translation().truncate()
+                + Vec2::X * collider.size * 0.5
+                + Vec2::Y * collider.size * 0.5,
+            Color::MIDNIGHT_BLUE,
+        );
+        gizmos.line_2d(
+            transform.translation().truncate()
+                - Vec2::X * collider.size * 0.5
+                - Vec2::Y * collider.size * 0.5,
+            transform.translation().truncate() + Vec2::X * collider.size * 0.5
+                - Vec2::Y * collider.size * 0.5,
+            Color::MIDNIGHT_BLUE,
+        );
+        gizmos.line_2d(
+            transform.translation().truncate() - Vec2::X * collider.size * 0.5
+                + Vec2::Y * collider.size * 0.5,
+            transform.translation().truncate()
+                + Vec2::X * collider.size * 0.5
+                + Vec2::Y * collider.size * 0.5,
+            Color::MIDNIGHT_BLUE,
+        );
+    });
 }

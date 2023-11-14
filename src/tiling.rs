@@ -1,13 +1,15 @@
 use bevy::{
     prelude::*,
-    render::texture::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor},
+    render::texture::{self, ImageAddressMode, ImageSampler, ImageSamplerDescriptor},
     sprite::Mesh2dHandle,
 };
 
-use crate::game::DistanceTraveled;
+use crate::game::{DistanceTraveled, GameBoundaries};
 
 #[derive(Component, Default)]
 pub struct Tiling {
+    pub tile_x: bool,
+    pub tile_y: bool,
     pub uv_offset: Vec2,
 }
 
@@ -18,9 +20,7 @@ pub struct Parallax {
 
 impl Default for Parallax {
     fn default() -> Self {
-        Self {
-            ratio: 1.0,
-        }
+        Self { ratio: 1.0 }
     }
 }
 
@@ -28,54 +28,49 @@ pub struct TilingPlugin;
 
 impl Plugin for TilingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (tile_textures, resize_tiling, scaling, parllax));
+        app.add_systems(Update, (tile_textures, apply_uvs, parllax));
     }
 }
 
 fn tile_textures(
     mut images: ResMut<Assets<Image>>,
     materials: Res<Assets<ColorMaterial>>,
-    query: Query<&Handle<ColorMaterial>, (With<Tiling>, Added<Handle<ColorMaterial>>)>,
+    query: Query<(&Handle<ColorMaterial>, &Tiling), Changed<Tiling>>,
 ) {
-    query.for_each(|material_handle| {
+    query.for_each(|(material_handle, tiling)| {
         let material = materials.get(material_handle).unwrap();
         if let Some(texture_handle) = &material.texture {
             let texture = images.get_mut(texture_handle).unwrap();
-            let sampler_desc = ImageSamplerDescriptor {
-                address_mode_u: ImageAddressMode::Repeat,
-                address_mode_v: ImageAddressMode::Repeat,
-                ..Default::default()
-            };
+            let mut sampler_desc = ImageSamplerDescriptor::default();
+            if tiling.tile_x {
+                sampler_desc.address_mode_u = ImageAddressMode::Repeat;
+            }
+            if tiling.tile_y {
+                sampler_desc.address_mode_v = ImageAddressMode::Repeat;
+            }
             texture.sampler = ImageSampler::Descriptor(sampler_desc.clone());
         }
     });
 }
 
-fn resize_tiling(
-    mut query: Query<(
-        &mut Tiling,
-        &Mesh2dHandle,
-        &Handle<ColorMaterial>,
-    )>,
+fn apply_uvs(
     mut meshes: ResMut<Assets<Mesh>>,
-    projection_query: Query<&OrthographicProjection>,
+    query: Query<(&Tiling, &Transform, &Mesh2dHandle, &Handle<ColorMaterial>)>,
     materials: Res<Assets<ColorMaterial>>,
     images: Res<Assets<Image>>,
 ) {
-    let projection = projection_query.single();
-    let view_size = Vec2::new(projection.area.width(), projection.area.height());
-    query.for_each_mut(|(tiling, mesh_handle, material_handle)| {
+    query.for_each(|(tiling, transform, mesh_handle, material_handle)| {
         let material = materials.get(material_handle).unwrap();
         let image_handle = material.texture.clone().unwrap();
         if let Some(image) = images.get(image_handle) {
             let texture_size = image.size_f32();
-            let tile_count_x = view_size.x / texture_size.x;
-            let offset = tiling.uv_offset / image.size_f32();
+            let tile_count = transform.scale.truncate() / texture_size;
+            let offset: Vec2 = tiling.uv_offset / image.size_f32();
             let uvs = vec![
-                [offset.x, offset.y + 1.0],
+                [offset.x, offset.y + tile_count.y],
                 [offset.x, offset.y],
-                [offset.x + tile_count_x, offset.y],
-                [offset.x + tile_count_x, offset.y + 1.0],
+                [offset.x + tile_count.x, offset.y],
+                [offset.x + tile_count.x, offset.y + tile_count.y],
             ];
 
             let mesh = meshes.get_mut(mesh_handle.0.clone()).unwrap();
@@ -84,29 +79,13 @@ fn resize_tiling(
     });
 }
 
-fn scaling(
-    mut query: Query<(&mut Transform, &Handle<ColorMaterial>), With<Tiling>>,
-    projection_query: Query<&OrthographicProjection>,
-    materials: Res<Assets<ColorMaterial>>,
-    images: Res<Assets<Image>>,
-) {
-    let projection = projection_query.single();
-    let view_size = Vec2::new(projection.area.width(), projection.area.height());
-    query.for_each_mut(|(mut transform, material_handle)| {
-        let material = materials.get(material_handle).unwrap();
-        let image_handle = material.texture.clone().unwrap();
-        if let Some(image) = images.get(image_handle) {
-            transform.scale.x = view_size.x;
-            transform.scale.y = image.size_f32().y;
-        }
-    });
-}
-
 fn parllax(
-    mut query: Query<(&mut Tiling, &Parallax)>,
+    mut query: Query<(&mut Transform, &mut Tiling, &Parallax)>,
     distance_traveled: Res<DistanceTraveled>,
+    camera_query: Query<&Transform, (With<Camera>, Without<Parallax>)>,
 ) {
-    query.for_each_mut(|(mut tiling, parallax)| {
-        tiling.uv_offset.x = distance_traveled.0 * parallax.ratio;
+    query.for_each_mut(|(mut transform, mut tiling, parallax)| {
+        let camera_transform = camera_query.single();
+        tiling.uv_offset.x = **distance_traveled * parallax.ratio;
     });
 }
