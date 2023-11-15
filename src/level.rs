@@ -4,7 +4,6 @@ use bevy::{
     prelude::*,
     sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle},
 };
-use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
 
 use crate::{
     anchor::AnchoredSprite,
@@ -12,9 +11,9 @@ use crate::{
     tiling::{Parallax, Tiling},
 };
 
-pub struct BackgroundPlugin;
+pub struct LevelPlugin;
 
-impl Plugin for BackgroundPlugin {
+impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnExit(GameState::Loading), setup);
     }
@@ -27,8 +26,30 @@ fn setup(
     game_assets: Res<GameAssets>,
 ) {
     let mesh = Mesh::from(shape::Quad::default());
+    
+    // spawn ground
     let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: mesh_handle,
+            material: materials.add(ColorMaterial::from(game_assets.ground_image.clone())),
+            transform: Transform::from_translation(Vec3::Z * 0.0),
+            ..default()
+        },
+        AnchoredSprite {
+            position: Anchor::BottomCenter,
+            pivot: Anchor::BottomCenter,
+            stretch: true,
+        },
+        Tiling {
+            tile_x: true,
+            ..default()
+        },
+        Parallax::default(),
+    ));
 
+    // spawn mountains
+    let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
     commands.spawn((
         MaterialMesh2dBundle {
             mesh: mesh_handle,
@@ -48,6 +69,7 @@ fn setup(
         Parallax { ratio: 1. / 4. },
     ));
 
+    // spawn buildings
     let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
     commands.spawn((
         MaterialMesh2dBundle {
@@ -68,6 +90,7 @@ fn setup(
         Parallax { ratio: 1. / 8. },
     ));
 
+    // spawn bottom clouds
     let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
     commands.spawn((
         MaterialMesh2dBundle {
@@ -88,6 +111,7 @@ fn setup(
         Parallax { ratio: 1. / 16. },
     ));
 
+    // spawn top clouds
     let mesh_handle: Mesh2dHandle = meshes.add(mesh).into();
     commands.spawn((
         MaterialMesh2dBundle {

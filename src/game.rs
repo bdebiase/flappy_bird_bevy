@@ -1,4 +1,4 @@
-use bevy::{app::PluginGroupBuilder, prelude::*, render::camera::ScalingMode};
+use bevy::{app::PluginGroupBuilder, prelude::*};
 use bevy_asset_loader::{
     asset_collection::AssetCollection,
     loading_state::{LoadingState, LoadingStateAppExt},
@@ -9,10 +9,8 @@ use rand::{thread_rng, Rng};
 use crate::{
     anchor::AnchorPlugin,
     animation::AnimationPlugin,
-    background::BackgroundPlugin,
-    ground::GroundPlugin,
+    level::LevelPlugin,
     menu::{MenuPlugin, MenuState},
-    networking::NetworkingPlugin,
     physics::{Gravity, PhysicsPlugin, PhysicsDebugPlugin},
     pipes::PipesPlugin,
     player::{Player, PlayerPlugin},
@@ -43,6 +41,8 @@ pub struct GameBoundaries(Rect);
 
 #[derive(AssetCollection, Resource)]
 pub struct GameAssets {
+    #[asset(path = "sprites/ground.png")]
+    pub ground_image: Handle<Image>,
     #[asset(path = "sprites/pipe.png")]
     pub pipe_image: Handle<Image>,
     #[asset(path = "sprites/background/mountains.png")]
@@ -72,15 +72,13 @@ impl PluginGroup for GamePlugins {
         PluginGroupBuilder::start::<Self>()
             .add(CameraShakePlugin)
             .add(AnimationPlugin)
-            .add(NetworkingPlugin)
             .add(AnchorPlugin)
             .add(TilingPlugin)
             .add(PhysicsPlugin)
             .add(PhysicsDebugPlugin)
             .add(GamePlugin)
             .add(MenuPlugin)
-            .add(BackgroundPlugin)
-            .add(GroundPlugin)
+            .add(LevelPlugin)
             .add(PlayerPlugin)
             .add(PipesPlugin)
     }

@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use bevy::{
     prelude::*,
-    sprite::collide_aabb::{collide, Collision},
+    sprite::collide_aabb::collide,
 };
 
 #[derive(Resource)]

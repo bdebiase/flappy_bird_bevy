@@ -265,18 +265,9 @@ fn auto_flap(
 fn animate_velocity(
     mut query: Query<(&mut Transform, &Velocity), With<Player>>,
     game_state: Res<State<GameState>>,
-    game_speed: Res<GameSpeed>,
     time: Res<Time>,
 ) {
     query.for_each_mut(|(mut transform, velocity)| {
-        // let rot = match **game_state {
-        //     GameState::Playing => velocity.y.atan2(**game_speed),
-        //     GameState::Stopped => -90f32.to_radians(),
-        //     _ => 0.0,
-        // };
-        // transform.rotation = transform
-        //     .rotation
-        //     .lerp(Quat::from_rotation_z(rot), 25.0 * time.delta_seconds());
         let rot = match **game_state {
             GameState::Dead => -90f32.to_radians(),
             _ => {

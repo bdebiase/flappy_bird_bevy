@@ -1,10 +1,10 @@
 use bevy::{
     prelude::*,
-    render::texture::{self, ImageAddressMode, ImageSampler, ImageSamplerDescriptor},
+    render::texture::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor},
     sprite::Mesh2dHandle,
 };
 
-use crate::game::{DistanceTraveled, GameBoundaries};
+use crate::game::DistanceTraveled;
 
 #[derive(Component, Default)]
 pub struct Tiling {

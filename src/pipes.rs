@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
 use rand::Rng;
 
 use crate::{
