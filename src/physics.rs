@@ -74,6 +74,14 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
+pub struct PhysicsDebugPlugin;
+
+impl Plugin for PhysicsDebugPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, draw_debug);
+    }
+}
+
 fn apply_gravity(
     mut query: Query<(&mut Velocity, Option<&GravityMultiplier>)>,
     gravity: Res<Gravity>,
@@ -121,36 +129,10 @@ fn check_collisions(
 
 fn draw_debug(mut gizmos: Gizmos, query: Query<(&GlobalTransform, &Collider)>) {
     query.for_each(|(transform, collider)| {
-        gizmos.line_2d(
-            transform.translation().truncate()
-                - Vec2::X * collider.size * 0.5
-                - Vec2::Y * collider.size * 0.5,
-            transform.translation().truncate() - Vec2::X * collider.size * 0.5
-                + Vec2::Y * collider.size * 0.5,
-            Color::MIDNIGHT_BLUE,
-        );
-        gizmos.line_2d(
-            transform.translation().truncate() + Vec2::X * collider.size * 0.5
-                - Vec2::Y * collider.size * 0.5,
-            transform.translation().truncate()
-                + Vec2::X * collider.size * 0.5
-                + Vec2::Y * collider.size * 0.5,
-            Color::MIDNIGHT_BLUE,
-        );
-        gizmos.line_2d(
-            transform.translation().truncate()
-                - Vec2::X * collider.size * 0.5
-                - Vec2::Y * collider.size * 0.5,
-            transform.translation().truncate() + Vec2::X * collider.size * 0.5
-                - Vec2::Y * collider.size * 0.5,
-            Color::MIDNIGHT_BLUE,
-        );
-        gizmos.line_2d(
-            transform.translation().truncate() - Vec2::X * collider.size * 0.5
-                + Vec2::Y * collider.size * 0.5,
-            transform.translation().truncate()
-                + Vec2::X * collider.size * 0.5
-                + Vec2::Y * collider.size * 0.5,
+        gizmos.rect_2d(
+            transform.translation().xy(),
+            0.0,
+            collider.size,
             Color::MIDNIGHT_BLUE,
         );
     });

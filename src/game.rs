@@ -13,7 +13,7 @@ use crate::{
     ground::GroundPlugin,
     menu::{MenuPlugin, MenuState},
     networking::NetworkingPlugin,
-    physics::{Gravity, PhysicsPlugin},
+    physics::{Gravity, PhysicsPlugin, PhysicsDebugPlugin},
     pipes::PipesPlugin,
     player::{Player, PlayerPlugin},
     tiling::TilingPlugin,
@@ -76,6 +76,7 @@ impl PluginGroup for GamePlugins {
             .add(AnchorPlugin)
             .add(TilingPlugin)
             .add(PhysicsPlugin)
+            .add(PhysicsDebugPlugin)
             .add(GamePlugin)
             .add(MenuPlugin)
             .add(BackgroundPlugin)
