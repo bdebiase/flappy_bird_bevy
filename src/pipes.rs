@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
-use bevy_xpbd_2d::components::Collider;
+use bevy_xpbd_2d::components::{Collider, RigidBody, CollisionLayers};
 use rand::Rng;
 
 use crate::{
-    game::{DistanceTraveled, GameAssets, GameBoundaries, GameState},
+    game::{DistanceTraveled, GameAssets, GameBoundaries, GameState, GameLayer},
     util,
 };
 
@@ -33,12 +33,6 @@ impl Default for PipeSpawner {
 pub struct Pipes {
     spawn_position: Vec2,
 }
-
-#[derive(Component)]
-pub struct Pipe;
-
-#[derive(Component)]
-pub struct PipeArea;
 
 pub struct PipesPlugin;
 
@@ -121,8 +115,9 @@ fn handle_spawning(
                         transform: Transform::from_translation(-pipe_offset),
                         ..default()
                     },
+                    RigidBody::Static,
                     Collider::cuboid(image.size_f32().x, image.size_f32().y),
-                    Pipe,
+                    CollisionLayers::new([GameLayer::Pipe], []),
                 ));
 
                 parent.spawn((
@@ -132,14 +127,16 @@ fn handle_spawning(
                             .with_translation(pipe_offset),
                         ..default()
                     },
+                    RigidBody::Static,
                     Collider::cuboid(image.size_f32().x, image.size_f32().y),
-                    Pipe,
+                    CollisionLayers::new([GameLayer::Pipe], []),
                 ));
 
                 parent.spawn((
                     SpatialBundle::default(),
+                    RigidBody::Static,
                     Collider::cuboid(1.0, event.gap_spacing),
-                    PipeArea,
+                    CollisionLayers::new([GameLayer::Score], []),
                 ));
             });
     }

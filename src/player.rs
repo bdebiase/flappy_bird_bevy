@@ -7,12 +7,11 @@ use bevy::{
     prelude::*,
 };
 use bevy_camera_shake::Shake2d;
-use bevy_xpbd_2d::components::{Collider, GravityScale, LinearVelocity};
+use bevy_xpbd_2d::components::{Collider, GravityScale, LinearVelocity, RigidBody, LockedAxes};
 
 use crate::{
     animation::{Animation, AnimationState},
     game::{GameAssets, GameBoundaries, GameScore, GameSpeed, GameState},
-    pipes::{Pipe, PipeArea},
 };
 
 #[derive(Component)]
@@ -127,7 +126,9 @@ fn setup(
         // AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
         player_animations.flap.clone(),
         AnimationState::default(),
-        Collider::ball(vendor_texture.size_f32().y * 0.9),
+        RigidBody::Dynamic,
+        LockedAxes::TRANSLATION_LOCKED.unlock_translation_y(),
+        Collider::ball(vendor_texture.size_f32().y * 0.5 * 0.9),
         GravityScale::default(),
         Player,
     ));

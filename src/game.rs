@@ -4,7 +4,7 @@ use bevy_asset_loader::{
     loading_state::{LoadingState, LoadingStateAppExt},
 };
 use bevy_camera_shake::{CameraShakePlugin, RandomSource, Shake2d};
-use bevy_xpbd_2d::{plugins::PhysicsPlugins, resources::Gravity};
+use bevy_xpbd_2d::{plugins::PhysicsPlugins, resources::Gravity, prelude::PhysicsLayer};
 use rand::{thread_rng, Rng};
 
 use crate::{
@@ -27,6 +27,13 @@ pub enum GameState {
     Playing,
     Stopped,
     Dead,
+}
+
+#[derive(PhysicsLayer)]
+pub enum GameLayer {
+    Pipe,
+    Ground,
+    Score,
 }
 
 #[derive(Resource, Deref, DerefMut)]
@@ -68,18 +75,7 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            PhysicsPlugins::default(),
-            CameraShakePlugin,
-            AnimationPlugin,
-            AnchorPlugin,
-            TilingPlugin,
-            MenuPlugin,
-            BackgroundPlugin,
-            GroundPlugin,
-            PlayerPlugin,
-            PipesPlugin,
-        ))
+        app
         .add_state::<GameState>()
         .add_loading_state(
             LoadingState::new(GameState::Loading).continue_to_state(GameState::Waiting),

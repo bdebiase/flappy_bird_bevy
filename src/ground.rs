@@ -3,10 +3,11 @@ use bevy::{
     sprite::{Anchor, MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
+use bevy_xpbd_2d::components::{RigidBody, Collider};
 
 use crate::{
     anchor::AnchoredSprite,
-    game::GameState,
+    game::{GameState, GameBoundaries},
     tiling::{Parallax, Tiling},
 };
 
@@ -32,6 +33,7 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    game_boundaries: Res<GameBoundaries>,
     ground_assets: Res<GroundAssets>,
 ) {
     let mesh = Mesh::from(shape::Quad::default());
@@ -54,5 +56,7 @@ fn setup(
             ..default()
         },
         Parallax::default(),
+        RigidBody::Static,
+        Collider::segment(Vec2::new(-100.0, 0.0), Vec2::new(100.0, 0.0)),
     ));
 }
