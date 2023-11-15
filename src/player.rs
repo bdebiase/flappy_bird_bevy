@@ -10,7 +10,7 @@ use bevy_camera_shake::Shake2d;
 
 use crate::{
     animation::{Animation, AnimationState},
-    game::{GameAssets, GameBoundaries, GameScore, GameSpeed, GameState},
+    game::{GameAssets, GameBoundaries, GameScore, GameState},
     physics::{Collider, CollisionEvent, GravityMultiplier, Velocity},
     pipes::{Pipe, PipeArea},
 };
@@ -64,7 +64,7 @@ fn setup_animations(
 ) {
     let idle_animation =
         Animation(benimator::Animation::from_indices(0..=1, FrameRate::from_fps(1.0)).ping_pong());
-    let animation_speed = 75;
+    let animation_speed = 50;
     let flap_animation = Animation(
         benimator::Animation::from_frames(vec![
             Frame::new(0, Duration::from_millis(animation_speed)),
@@ -125,7 +125,6 @@ fn setup(
         },
         // AnimationIndices { first: 0, last: 2 },
         // AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
-        player_animations.flap.clone(),
         AnimationState::default(),
         Velocity::default(),
         Collider {
@@ -193,11 +192,17 @@ fn handle_death(
     }
 }
 
-fn restart(mut query: Query<(&mut Transform, &mut GravityMultiplier), With<Player>>) {
-    query.for_each_mut(|(mut transform, mut gravity_multiplier)| {
+fn restart(
+    mut commands: Commands,
+    mut query: Query<(&mut Transform,&mut GravityMultiplier, Entity), With<Player>>,
+    player_animations: Res<PlayerAnimations>,
+) {
+    query.for_each_mut(|(mut transform, mut gravity_multiplier, entity)| {
         transform.translation.x = 0.0;
         transform.translation.y = 0.0;
         **gravity_multiplier = 1.0;
+
+        commands.entity(entity).insert(player_animations.flap.clone());
     });
 }
 
@@ -219,20 +224,18 @@ fn can_flap(
 
 fn flap_input(
     mut commands: Commands,
-    mut query: Query<(&mut Velocity, &mut AnimationState, &mut Handle<Animation>), With<Player>>,
+    mut query: Query<(&mut Velocity, &mut AnimationState), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
-    player_animations: Res<PlayerAnimations>,
     game_assets: Res<GameAssets>,
     game_state: Res<State<GameState>>,
     keyboard_input: Res<Input<KeyCode>>,
     flap_force: Res<FlapForce>,
 ) {
     query.for_each_mut(
-        |(mut velocity, mut animation_state, mut animation_handle)| {
+        |(mut velocity, mut animation_state)| {
             if keyboard_input.just_pressed(KeyCode::Space) {
                 velocity.y = flap_force.0;
                 animation_state.0.reset();
-                // *animation_handle = player_animations.flap.clone();
 
                 commands.spawn(AudioSourceBundle {
                     source: game_assets.flap_audio.clone(),
@@ -311,6 +314,7 @@ fn collisions(
                     transform.translation.y = game_boundaries.min.y;
 
                     shake.trauma = (1.0 - (velocity_multiplier - 0.5)) * 0.4;
+                    commands.entity(entity).remove::<Handle<Animation>>();
 
                     commands.spawn(AudioSourceBundle {
                         source: game_assets.hit_audio.clone(),
@@ -332,6 +336,7 @@ fn collisions(
                     if pipe_query.contains(event.entity_b) {
                         if *game_state != GameState::Stopped && *game_state != GameState::Dead {
                             shake.trauma = 0.25;
+                            commands.entity(entity).remove::<Handle<Animation>>();
 
                             commands.spawn(AudioSourceBundle {
                                 source: game_assets.hit_audio.clone(),

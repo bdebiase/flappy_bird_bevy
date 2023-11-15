@@ -80,12 +80,10 @@ fn apply_uvs(
 }
 
 fn parllax(
-    mut query: Query<(&mut Transform, &mut Tiling, &Parallax)>,
+    mut query: Query<(&mut Tiling, &Parallax)>,
     distance_traveled: Res<DistanceTraveled>,
-    camera_query: Query<&Transform, (With<Camera>, Without<Parallax>)>,
 ) {
-    query.for_each_mut(|(mut transform, mut tiling, parallax)| {
-        let camera_transform = camera_query.single();
+    query.for_each_mut(|(mut tiling, parallax)| {
         tiling.uv_offset.x = **distance_traveled * parallax.ratio;
     });
 }
