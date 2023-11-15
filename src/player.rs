@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{ops::Add, time::Duration};
 
 use benimator::{Frame, FrameRate};
 use bevy::{
@@ -7,11 +7,11 @@ use bevy::{
     prelude::*,
 };
 use bevy_camera_shake::Shake2d;
+use bevy_xpbd_2d::components::{Collider, GravityScale, LinearVelocity};
 
 use crate::{
     animation::{Animation, AnimationState},
     game::{GameAssets, GameBoundaries, GameScore, GameSpeed, GameState},
-    physics::{Collider, CollisionEvent, GravityMultiplier, Velocity},
     pipes::{Pipe, PipeArea},
 };
 
@@ -50,7 +50,7 @@ impl Plugin for PlayerPlugin {
                     trigger_restart
                         .run_if(in_state(GameState::Dead))
                         .run_if(input_just_pressed(KeyCode::Space)),
-                    collisions,
+                    // collisions,
                 )
                     .chain()
                     .run_if(not(in_state(GameState::Loading))),
@@ -64,7 +64,7 @@ fn setup_animations(
 ) {
     let idle_animation =
         Animation(benimator::Animation::from_indices(0..=1, FrameRate::from_fps(1.0)).ping_pong());
-    let animation_speed = 75;
+    let animation_speed = 60;
     let flap_animation = Animation(
         benimator::Animation::from_frames(vec![
             Frame::new(0, Duration::from_millis(animation_speed)),
@@ -127,21 +127,15 @@ fn setup(
         // AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
         player_animations.flap.clone(),
         AnimationState::default(),
-        Velocity::default(),
-        Collider {
-            size: Vec2::new(
-                vendor_texture.size_f32().y * 0.9,
-                vendor_texture.size_f32().y * 0.8,
-            ),
-        },
-        GravityMultiplier::default(),
+        Collider::ball(vendor_texture.size_f32().y * 0.9),
+        GravityScale::default(),
         Player,
     ));
 }
 
 fn handle_death(
     mut commands: Commands,
-    mut query: Query<(&mut Velocity, &mut GravityMultiplier, &Transform), With<Player>>,
+    mut query: Query<(&mut LinearVelocity, &mut GravityScale, &Transform), With<Player>>,
     mut death_timer: Local<Timer>,
     game_boundaries: Res<GameBoundaries>,
     game_assets: Res<GameAssets>,
@@ -168,7 +162,7 @@ fn handle_death(
             query.for_each_mut(|(mut velocity, mut gravity_multiplier, _)| {
                 **velocity = Vec2::ZERO;
                 **gravity_multiplier = 0.0;
-            });    
+            });
         }
         death_timer.reset();
     }
@@ -193,10 +187,11 @@ fn handle_death(
     }
 }
 
-fn restart(mut query: Query<(&mut Transform, &mut GravityMultiplier), With<Player>>) {
+fn restart(mut query: Query<(&mut Transform, &mut GravityScale), With<Player>>) {
     query.for_each_mut(|(mut transform, mut gravity_multiplier)| {
         transform.translation.x = 0.0;
         transform.translation.y = 0.0;
+        transform.rotation = Quat::IDENTITY;
         **gravity_multiplier = 1.0;
     });
 }
@@ -209,17 +204,17 @@ fn can_flap(
     query: Query<(&Transform, &Collider), With<Player>>,
     game_boundaries: Res<GameBoundaries>,
 ) -> bool {
-    for (transform, collider) in query.iter() {
-        if transform.translation.y + collider.size.y * 0.5 > game_boundaries.max.y {
-            return false;
-        }
-    }
+    // for (transform, collider) in query.iter() {
+    //     if transform.translation.y + collider.size.y * 0.5 > game_boundaries.max.y {
+    //         return false;
+    //     }
+    // }
     return true;
 }
 
 fn flap_input(
     mut commands: Commands,
-    mut query: Query<(&mut Velocity, &mut AnimationState, &mut Handle<Animation>), With<Player>>,
+    mut query: Query<(&mut LinearVelocity, &mut AnimationState, &mut Handle<Animation>), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     player_animations: Res<PlayerAnimations>,
     game_assets: Res<GameAssets>,
@@ -252,7 +247,7 @@ fn flap_input(
 }
 
 fn auto_flap(
-    mut query: Query<(&mut Velocity, &Transform), With<Player>>,
+    mut query: Query<(&mut LinearVelocity, &Transform), With<Player>>,
     flap_force: Res<FlapForce>,
 ) {
     query.for_each_mut(|(mut velocity, transform)| {
@@ -263,11 +258,15 @@ fn auto_flap(
 }
 
 fn animate_velocity(
-    mut query: Query<(&mut Transform, &Velocity), With<Player>>,
+    mut query: Query<(&mut Transform, &LinearVelocity), With<Player>>,
     game_state: Res<State<GameState>>,
     game_speed: Res<GameSpeed>,
     time: Res<Time>,
 ) {
+    if *game_state == GameState::Waiting {
+        return;
+    }
+
     query.for_each_mut(|(mut transform, velocity)| {
         // let rot = match **game_state {
         //     GameState::Playing => velocity.y.atan2(**game_speed),
@@ -277,99 +276,121 @@ fn animate_velocity(
         // transform.rotation = transform
         //     .rotation
         //     .lerp(Quat::from_rotation_z(rot), 25.0 * time.delta_seconds());
-        let rot = match **game_state {
-            GameState::Dead => -90f32.to_radians(),
-            _ => {
-                if velocity.y > 0.0 {
-                    30f32.to_radians()
-                } else {
-                    (velocity.y.to_radians() * 0.5).clamp(-90f32.to_radians(), 0.0)
-                }
-            }
-        };
-        transform.rotation = transform
-            .rotation
-            .lerp(Quat::from_rotation_z(rot), 25.0 * time.delta_seconds());
+
+        transform.rotate_local_z(velocity.y.to_radians() * 4.0 * time.delta_seconds());
+        let mut euler_angles = transform.rotation.to_euler(EulerRot::XYZ);
+        euler_angles.2 = euler_angles
+            .2
+            .clamp(-90f32.to_radians(), 20f32.to_radians());
+        transform.rotation = Quat::from_euler(
+            EulerRot::XYZ,
+            euler_angles.0,
+            euler_angles.1,
+            euler_angles.2,
+        );
+        // let rot = match **game_state {
+        //     GameState::Waiting => 0.0,
+        //     GameState::Dead => -90f32.to_radians(),
+        //     _ => {
+        //         if velocity.y > -75.0 {
+        //             20f32.to_radians()
+        //         } else {
+        //             (velocity.y.to_radians() * 0.5).clamp(-90f32.to_radians(), 0.0)
+        //         }
+        //     }
+        // };
+        // transform.rotation = transform
+        //     .rotation
+        //     .lerp(Quat::from_rotation_z(rot), 25.0 * time.delta_seconds());
     });
 }
 
-fn collisions(
-    mut commands: Commands,
-    mut query: Query<(&mut Transform, &mut Velocity, &mut GravityMultiplier, &mut AnimationState, Entity), With<Player>>,
-    mut next_state: ResMut<NextState<GameState>>,
-    mut collision_events: EventReader<CollisionEvent>,
-    mut game_score: ResMut<GameScore>,
-    mut shake_query: Query<&mut Shake2d>,
-    game_assets: Res<GameAssets>,
-    pipe_query: Query<Entity, With<Pipe>>,
-    pipe_area_query: Query<Entity, (With<PipeArea>, Without<Pipe>)>,
-    game_state: Res<State<GameState>>,
-    game_boundaries: Res<GameBoundaries>,
-) {
-    query.for_each_mut(
-        |(mut transform, mut velocity, mut gravity_multiplier, mut animation_state, entity)| {
-            // ground collision
-            let mut shake = shake_query.single_mut();
-            if transform.translation.y < game_boundaries.min.y {
-                if *game_state != GameState::Dead {
-                    println!("IMPACT VELOCITY: {:?}", **velocity);
-                    let velocity_multiplier = ((500.0 - velocity.length()) / 300.0).clamp(0.5, 1.5);
-                    println!("VALUE: {}", velocity_multiplier);
-                    **velocity = Vec2::ZERO;
-                    **gravity_multiplier = 0.0;
-                    transform.translation.y = game_boundaries.min.y;
+// fn collisions(
+//     mut commands: Commands,
+//     mut query: Query<
+//         (
+//             &mut Transform,
+//             &mut LinearVelocity,
+//             &mut GravityScale,
+//             &mut AnimationState,
+//             Entity,
+//         ),
+//         With<Player>,
+//     >,
+//     mut next_state: ResMut<NextState<GameState>>,
+//     mut collision_events: EventReader<CollisionEvent>,
+//     mut game_score: ResMut<GameScore>,
+//     mut shake_query: Query<&mut Shake2d>,
+//     game_assets: Res<GameAssets>,
+//     pipe_query: Query<Entity, With<Pipe>>,
+//     pipe_area_query: Query<Entity, (With<PipeArea>, Without<Pipe>)>,
+//     game_state: Res<State<GameState>>,
+//     game_boundaries: Res<GameBoundaries>,
+// ) {
+//     query.for_each_mut(
+//         |(mut transform, mut velocity, mut gravity_multiplier, mut animation_state, entity)| {
+//             // ground collision
+//             let mut shake = shake_query.single_mut();
+//             if transform.translation.y < game_boundaries.min.y {
+//                 if *game_state != GameState::Dead {
+//                     println!("IMPACT VELOCITY: {:?}", **velocity);
+//                     let velocity_multiplier = ((500.0 - velocity.length()) / 300.0).clamp(0.5, 1.5);
+//                     println!("VALUE: {}", velocity_multiplier);
+//                     **velocity = Vec2::ZERO;
+//                     **gravity_multiplier = 0.0;
+//                     transform.translation.y = game_boundaries.min.y;
 
-                    shake.trauma = (1.0 - (velocity_multiplier - 0.5)) * 0.4;
+//                     shake.trauma = (1.0 - (velocity_multiplier - 0.5)) * 0.4;
 
-                    commands.spawn(AudioSourceBundle {
-                        source: game_assets.hit_audio.clone(),
-                        settings: PlaybackSettings {
-                            mode: PlaybackMode::Remove,
-                            volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.1)),
-                            speed: velocity_multiplier,
-                            ..default()
-                        },
-                    });
+//                     commands.spawn(AudioSourceBundle {
+//                         source: game_assets.hit_audio.clone(),
+//                         settings: PlaybackSettings {
+//                             mode: PlaybackMode::Remove,
+//                             volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.1)),
+//                             speed: velocity_multiplier,
+//                             ..default()
+//                         },
+//                     });
 
-                    next_state.set(GameState::Dead);
-                }
-            }
+//                     next_state.set(GameState::Dead);
+//                 }
+//             }
 
-            // pipe collison
-            for event in collision_events.read() {
-                if event.entity_a == entity {
-                    if pipe_query.contains(event.entity_b) {
-                        if *game_state != GameState::Stopped && *game_state != GameState::Dead {
-                            shake.trauma = 0.25;
+//             // pipe collison
+//             for event in collision_events.read() {
+//                 if event.entity_a == entity {
+//                     if pipe_query.contains(event.entity_b) {
+//                         if *game_state != GameState::Stopped && *game_state != GameState::Dead {
+//                             shake.trauma = 0.25;
 
-                            commands.spawn(AudioSourceBundle {
-                                source: game_assets.hit_audio.clone(),
-                                settings: PlaybackSettings {
-                                    mode: PlaybackMode::Remove,
-                                    volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.1)),
-                                    ..default()
-                                },
-                            });
+//                             commands.spawn(AudioSourceBundle {
+//                                 source: game_assets.hit_audio.clone(),
+//                                 settings: PlaybackSettings {
+//                                     mode: PlaybackMode::Remove,
+//                                     volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.1)),
+//                                     ..default()
+//                                 },
+//                             });
 
-                            next_state.set(GameState::Stopped);
-                            break;
-                        }
-                    } else if pipe_area_query.contains(event.entity_b) {
-                        **game_score += 1;
+//                             next_state.set(GameState::Stopped);
+//                             break;
+//                         }
+//                     } else if pipe_area_query.contains(event.entity_b) {
+//                         **game_score += 1;
 
-                        commands.entity(event.entity_b).despawn();
+//                         commands.entity(event.entity_b).despawn();
 
-                        commands.spawn(AudioSourceBundle {
-                            source: game_assets.point_audio.clone(),
-                            settings: PlaybackSettings {
-                                mode: PlaybackMode::Remove,
-                                volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.1)),
-                                ..default()
-                            },
-                        });
-                    }
-                }
-            }
-        },
-    );
-}
+//                         commands.spawn(AudioSourceBundle {
+//                             source: game_assets.point_audio.clone(),
+//                             settings: PlaybackSettings {
+//                                 mode: PlaybackMode::Remove,
+//                                 volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.1)),
+//                                 ..default()
+//                             },
+//                         });
+//                     }
+//                 }
+//             }
+//         },
+//     );
+// }

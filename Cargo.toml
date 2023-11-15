@@ -11,6 +11,7 @@ bevy_asset_loader = { version = "0.18.0", features = ["2d"] }
 rand = "0.8.5"
 benimator = { version = "4.1.3" }
 bevy_camera_shake = { version = "3.0.0" }
+bevy_xpbd_2d = { version = "0.3" }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

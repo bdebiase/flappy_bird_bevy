@@ -3,7 +3,8 @@ use bevy_asset_loader::{
     asset_collection::AssetCollection,
     loading_state::{LoadingState, LoadingStateAppExt},
 };
-use bevy_camera_shake::{RandomSource, Shake2d, CameraShakePlugin};
+use bevy_camera_shake::{CameraShakePlugin, RandomSource, Shake2d};
+use bevy_xpbd_2d::{plugins::PhysicsPlugins, resources::Gravity};
 use rand::{thread_rng, Rng};
 
 use crate::{
@@ -13,7 +14,6 @@ use crate::{
     ground::GroundPlugin,
     menu::{MenuPlugin, MenuState},
     networking::NetworkingPlugin,
-    physics::{Gravity, PhysicsPlugin},
     pipes::PipesPlugin,
     player::{Player, PlayerPlugin},
     tiling::TilingPlugin,
@@ -64,48 +64,39 @@ pub struct GameAssets {
     #[asset(path = "audio/point.ogg")]
     pub point_audio: Handle<AudioSource>,
 }
-
-pub struct GamePlugins;
-
-impl PluginGroup for GamePlugins {
-    fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>()
-            .add(CameraShakePlugin)
-            .add(AnimationPlugin)
-            .add(NetworkingPlugin)
-            .add(AnchorPlugin)
-            .add(TilingPlugin)
-            .add(PhysicsPlugin)
-            .add(GamePlugin)
-            .add(MenuPlugin)
-            .add(BackgroundPlugin)
-            .add(GroundPlugin)
-            .add(PlayerPlugin)
-            .add(PipesPlugin)
-    }
-}
-
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<GameState>()
-            .add_loading_state(
-                LoadingState::new(GameState::Loading).continue_to_state(GameState::Waiting),
-            )
-            .add_collection_to_loading_state::<_, GameAssets>(GameState::Loading)
-            .insert_resource(ClearColor(Color::hex("#4EC0CA").unwrap()))
-            .insert_resource(Gravity::from(-Vec2::Y * 400.0))
-            .insert_resource(GameScore(0))
-            .insert_resource(GameSpeed(50.0))
-            .insert_resource(DistanceTraveled(0.0))
-            .insert_resource(GameBoundaries::default())
-            .add_systems(Startup, setup)
-            .add_systems(OnEnter(GameState::Waiting), restart)
-            .add_systems(PreUpdate, update_boundaries)
-            .add_systems(PreUpdate, update_distance)
-            .add_systems(PreUpdate, update_camera)
-            .add_systems(Update, debug);
+        app.add_plugins((
+            PhysicsPlugins::default(),
+            CameraShakePlugin,
+            AnimationPlugin,
+            AnchorPlugin,
+            TilingPlugin,
+            MenuPlugin,
+            BackgroundPlugin,
+            GroundPlugin,
+            PlayerPlugin,
+            PipesPlugin,
+        ))
+        .add_state::<GameState>()
+        .add_loading_state(
+            LoadingState::new(GameState::Loading).continue_to_state(GameState::Waiting),
+        )
+        .add_collection_to_loading_state::<_, GameAssets>(GameState::Loading)
+        .insert_resource(ClearColor(Color::hex("#4EC0CA").unwrap()))
+        .insert_resource(Gravity(-Vec2::Y * 400.0))
+        .insert_resource(GameScore(0))
+        .insert_resource(GameSpeed(50.0))
+        .insert_resource(DistanceTraveled(0.0))
+        .insert_resource(GameBoundaries::default())
+        .add_systems(Startup, setup)
+        .add_systems(OnEnter(GameState::Waiting), restart)
+        .add_systems(PreUpdate, update_boundaries)
+        .add_systems(PreUpdate, update_distance)
+        .add_systems(PreUpdate, update_camera)
+        .add_systems(Update, debug);
     }
 }
 

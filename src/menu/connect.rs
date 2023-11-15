@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::util;
+
 use super::MenuState;
 
 #[derive(Component)]
@@ -13,7 +15,7 @@ pub struct ConnectMenuPlugin;
 impl Plugin for ConnectMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(MenuState::Connect), setup)
-            .add_systems(OnExit(MenuState::Connect), despawn)
+            .add_systems(OnExit(MenuState::Connect), util::despawn::<MenuConnectUI>)
             .add_systems(Update, handle_buttons);
     }
 }
@@ -26,11 +28,5 @@ pub fn handle_buttons(
 ) {
     for (interaction, btn) in interaction_query.iter_mut() {
         if let Interaction::Pressed = *interaction {}
-    }
-}
-
-pub fn despawn(query: Query<Entity, With<MenuConnectUI>>, mut commands: Commands) {
-    for e in query.iter() {
-        commands.entity(e).despawn_recursive();
     }
 }

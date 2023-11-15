@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::util;
+
 use super::MenuState;
 
 #[derive(Component)]
@@ -27,7 +29,7 @@ impl Plugin for LobbyMenuPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(LobbyID("".to_owned()))
             .add_systems(OnEnter(MenuState::Lobby), setup)
-            .add_systems(OnExit(MenuState::Lobby), despawn)
+            .add_systems(OnExit(MenuState::Lobby), util::despawn::<MenuOnlineUI>)
             .add_systems(Update, handle_buttons.run_if(in_state(MenuState::Lobby)));
     }
 }
@@ -60,11 +62,5 @@ pub fn handle_buttons(
                 MenuOnlineBtn::Back => {}
             }
         }
-    }
-}
-
-pub fn despawn(query: Query<Entity, With<MenuOnlineUI>>, mut commands: Commands) {
-    for e in query.iter() {
-        commands.entity(e).despawn_recursive();
     }
 }

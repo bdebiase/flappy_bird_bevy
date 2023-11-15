@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 use bevy_asset_loader::{asset_collection::AssetCollection, loading_state::LoadingStateAppExt};
+use bevy_xpbd_2d::components::Collider;
 use rand::Rng;
 
 use crate::{
     game::{DistanceTraveled, GameAssets, GameBoundaries, GameState},
-    physics::Collider,
+    util,
 };
 
 #[derive(Event, Default)]
@@ -50,7 +51,10 @@ impl Plugin for PipesPlugin {
                 (spawner, handle_spawning, handle_despawning, move_pipes)
                     .run_if(in_state(GameState::Playing)),
             )
-            .add_systems(OnEnter(GameState::Waiting), restart);
+            .add_systems(
+                OnEnter(GameState::Waiting),
+                (restart, util::despawn::<Pipes>),
+            );
     }
 }
 
@@ -58,15 +62,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((SpatialBundle::default(), PipeSpawner::default()));
 }
 
-fn restart(
-    mut commands: Commands,
-    mut spawner_query: Query<&mut PipeSpawner>,
-    query: Query<Entity, With<Pipes>>,
-) {
-    query.for_each(|entity| {
-        commands.entity(entity).despawn_recursive();
-    });
-
+fn restart(mut spawner_query: Query<&mut PipeSpawner>) {
     spawner_query.for_each_mut(|mut spawner| {
         spawner.next_position = Vec2::ZERO;
     });
@@ -125,9 +121,7 @@ fn handle_spawning(
                         transform: Transform::from_translation(-pipe_offset),
                         ..default()
                     },
-                    Collider {
-                        size: image.size_f32(),
-                    },
+                    Collider::cuboid(image.size_f32().x, image.size_f32().y),
                     Pipe,
                 ));
 
@@ -138,17 +132,13 @@ fn handle_spawning(
                             .with_translation(pipe_offset),
                         ..default()
                     },
-                    Collider {
-                        size: image.size_f32(),
-                    },
+                    Collider::cuboid(image.size_f32().x, image.size_f32().y),
                     Pipe,
                 ));
 
                 parent.spawn((
                     SpatialBundle::default(),
-                    Collider {
-                        size: Vec2::new(1.0, event.gap_spacing),
-                    },
+                    Collider::cuboid(1.0, event.gap_spacing),
                     PipeArea,
                 ));
             });

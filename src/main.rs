@@ -5,13 +5,13 @@ mod game;
 mod ground;
 mod menu;
 mod networking;
-mod physics;
 mod pipes;
 mod player;
 mod tiling;
+mod util;
 
 use bevy::prelude::*;
-use game::GamePlugins;
+use game::GamePlugin;
 
 fn main() {
     App::new()
@@ -27,7 +27,7 @@ fn main() {
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest()),
-            GamePlugins,
+            GamePlugin,
         ))
         .run();
 }
