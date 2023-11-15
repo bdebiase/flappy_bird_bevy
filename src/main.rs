@@ -7,6 +7,7 @@ mod physics;
 mod pipes;
 mod player;
 mod tiling;
+mod camera;
 
 use bevy::prelude::*;
 use game::GamePlugins;
