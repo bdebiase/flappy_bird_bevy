@@ -10,6 +10,7 @@ mod tiling;
 mod camera;
 
 use bevy::prelude::*;
+use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use game::GamePlugins;
 
 fn main() {
@@ -26,7 +27,9 @@ fn main() {
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest()),
+            FramepacePlugin,
             GamePlugins,
         ))
+        // .insert_resource(FramepaceSettings::default().with_limiter(Limiter::from_framerate(60.0)))
         .run();
 }

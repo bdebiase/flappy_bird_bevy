@@ -23,7 +23,7 @@ fn random_number() -> f32 {
 impl Plugin for GameCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CameraShakePlugin)
-            .add_systems(OnExit(GameState::Loading), setup)
+            .add_systems(Startup, setup)
             .add_systems(PreUpdate, update_camera);
     }
 }

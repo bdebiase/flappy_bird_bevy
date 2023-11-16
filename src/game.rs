@@ -72,7 +72,7 @@ impl PluginGroup for GamePlugins {
             .add(AnchorPlugin)
             .add(TilingPlugin)
             .add(PhysicsPlugin)
-            .add(PhysicsDebugPlugin)
+            // .add(PhysicsDebugPlugin)
             .add(GamePlugin)
             .add(GameCameraPlugin)
             .add(MenuPlugin)

@@ -4,7 +4,7 @@ use benimator::{Frame, FrameRate};
 use bevy::{
     audio::{PlaybackMode, VolumeLevel},
     input::common_conditions::input_just_pressed,
-    prelude::*,
+    prelude::*, sprite::collide_aabb::Collision,
 };
 use bevy_camera_shake::Shake2d;
 
@@ -270,38 +270,41 @@ fn animate_velocity(
     game_state: Res<State<GameState>>,
     time: Res<Time>,
 ) {
+    if *game_state == GameState::Waiting {
+        return;
+    }
+
     query.for_each_mut(|(mut transform, velocity)| {
-        let rot = match **game_state {
-            GameState::Dead => -90f32.to_radians(),
-            _ => {
-                if velocity.y > 0.0 {
-                    30f32.to_radians()
-                } else {
-                    (velocity.y.to_radians() * 0.5).clamp(-90f32.to_radians(), 0.0)
-                }
-            }
-        };
-        transform.rotation = transform
-            .rotation
-            .lerp(Quat::from_rotation_z(rot), 25.0 * time.delta_seconds());
+        let multiplier = if velocity.y > 0.0 { 10.0 } else { 3.0 };
+        transform.rotate_local_z(velocity.y.to_radians() * multiplier * time.delta_seconds());
+        let mut euler_angles = transform.rotation.to_euler(EulerRot::XYZ);
+        euler_angles.2 = euler_angles
+            .2
+            .clamp(-90f32.to_radians(), 20f32.to_radians());
+        transform.rotation = Quat::from_euler(
+            EulerRot::XYZ,
+            euler_angles.0,
+            euler_angles.1,
+            euler_angles.2,
+        );
     });
 }
 
 fn collisions(
     mut commands: Commands,
-    mut query: Query<(&mut Transform, &mut Velocity, &mut GravityMultiplier, &mut AnimationState, Entity), With<Player>>,
+    mut query: Query<(&mut Transform, &mut Velocity, &mut GravityMultiplier, &mut AnimationState, &Collider, Entity), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     mut collision_events: EventReader<CollisionEvent>,
     mut game_score: ResMut<GameScore>,
     mut shake_query: Query<&mut Shake2d>,
     game_assets: Res<GameAssets>,
-    pipe_query: Query<Entity, With<Pipe>>,
+    pipe_query: Query<(&GlobalTransform, &Collider), With<Pipe>>,
     pipe_area_query: Query<Entity, (With<PipeArea>, Without<Pipe>)>,
     game_state: Res<State<GameState>>,
     game_boundaries: Res<GameBoundaries>,
 ) {
     query.for_each_mut(
-        |(mut transform, mut velocity, mut gravity_multiplier, mut animation_state, entity)| {
+        |(mut transform, mut velocity, mut gravity_multiplier, mut animation_state, collider, entity)| {
             // ground collision
             let mut shake = shake_query.single_mut();
             if transform.translation.y < game_boundaries.min.y {
@@ -333,7 +336,7 @@ fn collisions(
             // pipe collison
             for event in collision_events.read() {
                 if event.entity_a == entity {
-                    if pipe_query.contains(event.entity_b) {
+                    if let Ok((pipe_transform, pipe_collider)) = pipe_query.get(event.entity_b) {
                         if *game_state != GameState::Stopped && *game_state != GameState::Dead {
                             shake.trauma = 0.25;
                             commands.entity(entity).remove::<Handle<Animation>>();
@@ -348,9 +351,22 @@ fn collisions(
                             });
 
                             next_state.set(GameState::Stopped);
-                            break;
                         }
-                    } else if pipe_area_query.contains(event.entity_b) {
+
+                        let overlap_y = (collider.size.y / 2.0 + pipe_collider.size.y / 2.0) - (pipe_transform.translation().y - transform.translation.y).abs();
+                        let translation_vector = match event.collision {
+                            Collision::Top => Vec3::new(0.0, overlap_y, 0.0),
+                            Collision::Bottom => Vec3::new(0.0, -overlap_y, 0.0),
+                            Collision::Inside => Vec3::new(0.0, overlap_y, 0.0),
+                            _ => Vec3::ZERO,
+                        };
+                        println!("{:?}", event.collision);
+                        transform.translation += translation_vector;
+                        println!("TRANSLATED: {translation_vector}");
+                    }
+                    
+                    // score collision
+                    if pipe_area_query.contains(event.entity_b) {
                         **game_score += 1;
 
                         commands.entity(event.entity_b).despawn();

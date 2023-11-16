@@ -26,7 +26,7 @@ fn setup(
     game_assets: Res<GameAssets>,
 ) {
     let mesh = Mesh::from(shape::Quad::default());
-    
+
     // spawn ground
     let mesh_handle: Mesh2dHandle = meshes.add(mesh.clone()).into();
     commands.spawn((

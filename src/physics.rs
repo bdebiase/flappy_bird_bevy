@@ -1,9 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use bevy::{
-    prelude::*,
-    sprite::collide_aabb::collide,
-};
+use bevy::{prelude::*, sprite::collide_aabb::{collide, Collision}};
 
 #[derive(Resource)]
 pub struct Gravity(Vec2);
@@ -61,6 +58,7 @@ impl From<Vec2> for Collider {
 pub struct CollisionEvent {
     pub entity_a: Entity,
     pub entity_b: Entity,
+    pub collision: Collision,
 }
 
 pub struct PhysicsPlugin;
@@ -69,7 +67,7 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CollisionEvent>()
             .insert_resource(Gravity::from(Vec2::new(0.0, -100.0)))
-            .add_systems(PreUpdate, check_collisions)
+            .add_systems(PostUpdate, check_collisions)
             .add_systems(Update, (apply_gravity, apply_velocity));
     }
 }
@@ -107,20 +105,21 @@ fn check_collisions(
     collider_query: Query<(Entity, &Collider, &GlobalTransform)>,
 ) {
     let colliders = collider_query.iter().collect::<Vec<_>>();
-
     for (i, (entity_a, collider_a, transform_a)) in colliders.iter().enumerate() {
         for (entity_b, collider_b, transform_b) in colliders.iter().skip(i + 1) {
-            let collision = collide(
-                transform_a.translation(),
-                collider_a.size,
-                transform_b.translation(),
-                collider_b.size,
-            );
+            // workaround for PostUpdate
+            if transform_a.translation() == Vec3::ZERO || transform_b.translation() == Vec3::ZERO {
+                continue;
+            }
 
-            if let Some(_collision) = collision {
+            if let Some(collision) = collide(
+                transform_a.translation(), collider_a.size,
+                transform_b.translation(), collider_b.size,
+            ) {
                 collision_events.send(CollisionEvent {
                     entity_a: *entity_a,
                     entity_b: *entity_b,
+                    collision,
                 });
             }
         }
