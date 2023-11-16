@@ -40,8 +40,10 @@ fn transform(
                 (anchor_position + pivot_offset).extend(transform.translation.z);
             transform.scale.x = game_size.x;
             transform.scale.y = image.size_f32().y;
+
+            // definitely don't like this implementation
             if anchored_sprite.stretch {
-                let min_area = projection.area.min + camera_transform.translation.truncate();
+                let min_area = projection.area.min + camera_transform.translation.xy();
                 transform.scale.y = game_boundaries.min.y - min_area.y;
                 transform.translation.y = min_area.y + transform.scale.y * 0.5;
             }

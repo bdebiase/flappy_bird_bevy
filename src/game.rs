@@ -129,7 +129,7 @@ fn update_boundaries(
 ) {
     if let Ok((transform, projection)) = camera_query.get_single() {
         let view_extents = Vec2::new(projection.area.width(), projection.area.height()) * 0.5
-        + transform.translation.truncate();
+        + transform.translation.xy();
         let game_height = 175.0;
         game_boundaries.min = Vec2::new(-view_extents.x * 1.25, -50.0);
         game_boundaries.max = Vec2::new(view_extents.x * 1.25, game_boundaries.min.y + game_height);

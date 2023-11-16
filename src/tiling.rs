@@ -64,7 +64,7 @@ fn apply_uvs(
         let image_handle = material.texture.clone().unwrap();
         if let Some(image) = images.get(image_handle) {
             let texture_size = image.size_f32();
-            let tile_count = transform.scale.truncate() / texture_size;
+            let tile_count = transform.scale.xy() / texture_size;
             let offset: Vec2 = tiling.uv_offset / image.size_f32();
             let uvs = vec![
                 [offset.x, offset.y + tile_count.y],

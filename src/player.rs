@@ -199,6 +199,7 @@ fn restart(
     query.for_each_mut(|(mut transform, mut gravity_scale, entity)| {
         transform.translation.x = 0.0;
         transform.translation.y = 0.0;
+        transform.rotation = Quat::IDENTITY;
         **gravity_scale = 1.0;
 
         commands.entity(entity).insert(player_animations.flap.clone());

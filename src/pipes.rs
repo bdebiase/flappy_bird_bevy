@@ -88,7 +88,7 @@ fn spawner(
                             ..=game_boundaries.max.y - spacing * 0.5 - 16.0 * 2.0,
                     );
             event_writer.send(PipeSpawnEvent {
-                position: transform.translation.truncate(),
+                position: transform.translation.xy(),
                 gap_spacing: spacing,
             });
             spawner.next_position.x = **distance_traveled + spawner.distance_spacing;
