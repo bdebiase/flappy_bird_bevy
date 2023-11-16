@@ -9,7 +9,7 @@ use crate::{
     animation::AnimationPlugin,
     level::LevelPlugin,
     menu::MenuPlugin,
-    physics::{Gravity, PhysicsPlugin, PhysicsDebugPlugin},
+    physics::{Gravity, PhysicsPlugin},
     pipes::PipesPlugin,
     player::PlayerPlugin,
     tiling::TilingPlugin, camera::GameCameraPlugin,

@@ -10,7 +10,7 @@ mod tiling;
 mod camera;
 
 use bevy::prelude::*;
-use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
+use bevy_framepace::FramepacePlugin;
 use game::GamePlugins;
 
 fn main() {

@@ -93,7 +93,6 @@ fn setup(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut textures: ResMut<Assets<Image>>,
-    player_animations: Res<PlayerAnimations>,
     game_assets: Res<GameAssets>,
 ) {
     let mut texture_atlas_builder = TextureAtlasBuilder::default();
@@ -292,7 +291,7 @@ fn animate_velocity(
 
 fn collisions(
     mut commands: Commands,
-    mut query: Query<(&mut Transform, &mut Velocity, &mut GravityMultiplier, &mut AnimationState, &Collider, Entity), With<Player>>,
+    mut query: Query<(&mut Transform, &mut Velocity, &mut GravityMultiplier, &Collider, Entity), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     mut collision_events: EventReader<CollisionEvent>,
     mut game_score: ResMut<GameScore>,
@@ -304,7 +303,7 @@ fn collisions(
     game_boundaries: Res<GameBoundaries>,
 ) {
     query.for_each_mut(
-        |(mut transform, mut velocity, mut gravity_multiplier, mut animation_state, collider, entity)| {
+        |(mut transform, mut velocity, mut gravity_multiplier, collider, entity)| {
             // ground collision
             let mut shake = shake_query.single_mut();
             if transform.translation.y < game_boundaries.min.y {

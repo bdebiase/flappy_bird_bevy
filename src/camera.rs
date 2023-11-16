@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_camera_shake::{RandomSource, Shake2d, CameraShakePlugin};
 use rand::{thread_rng, Rng};
 
-use crate::{game::{GameBoundaries, GameState}, player::Player};
+use crate::{game::GameBoundaries, player::Player};
 
 pub struct GameCameraPlugin;
 
