@@ -26,9 +26,9 @@ impl DerefMut for Gravity {
 }
 
 #[derive(Component, Deref, DerefMut)]
-pub struct GravityMultiplier(pub f32);
+pub struct GravityScale(pub f32);
 
-impl Default for GravityMultiplier {
+impl Default for GravityScale {
     fn default() -> Self {
         Self(1.0)
     }
@@ -81,7 +81,7 @@ impl Plugin for PhysicsDebugPlugin {
 }
 
 fn apply_gravity(
-    mut query: Query<(&mut Velocity, Option<&GravityMultiplier>)>,
+    mut query: Query<(&mut Velocity, Option<&GravityScale>)>,
     gravity: Res<Gravity>,
     time: Res<Time>,
 ) {

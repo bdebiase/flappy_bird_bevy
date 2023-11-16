@@ -11,7 +11,7 @@ use bevy_camera_shake::Shake2d;
 use crate::{
     animation::{Animation, AnimationState},
     game::{GameAssets, GameBoundaries, GameScore, GameState},
-    physics::{Collider, CollisionEvent, GravityMultiplier, Velocity},
+    physics::{Collider, CollisionEvent, GravityScale, Velocity},
     pipes::{Pipe, PipeArea},
 };
 
@@ -132,14 +132,14 @@ fn setup(
                 vendor_texture.size_f32().y * 0.8,
             ),
         },
-        GravityMultiplier::default(),
+        GravityScale::default(),
         Player,
     ));
 }
 
 fn handle_death(
     mut commands: Commands,
-    mut query: Query<(&mut Velocity, &mut GravityMultiplier, &Transform), With<Player>>,
+    mut query: Query<(&mut Velocity, &mut GravityScale, &Transform), With<Player>>,
     mut death_timer: Local<Timer>,
     game_boundaries: Res<GameBoundaries>,
     game_assets: Res<GameAssets>,
@@ -163,9 +163,9 @@ fn handle_death(
         println!("JUST DIED");
         death_timer.unpause();
         if death_timer.percent() == 0.0 {
-            query.for_each_mut(|(mut velocity, mut gravity_multiplier, _)| {
+            query.for_each_mut(|(mut velocity, mut gravity_scale, _)| {
                 **velocity = Vec2::ZERO;
-                **gravity_multiplier = 0.0;
+                **gravity_scale = 0.0;
             });    
         }
         death_timer.reset();
@@ -174,9 +174,9 @@ fn handle_death(
     death_timer.tick(time.delta());
 
     if death_timer.just_finished() {
-        query.for_each_mut(|(_, mut gravity_multiplier, transform)| {
+        query.for_each_mut(|(_, mut gravity_scale, transform)| {
             if transform.translation.y != game_boundaries.min.y {
-                **gravity_multiplier = 1.0;
+                **gravity_scale = 1.0;
 
                 commands.spawn(AudioSourceBundle {
                     source: game_assets.fall_audio.clone(),
@@ -193,13 +193,13 @@ fn handle_death(
 
 fn restart(
     mut commands: Commands,
-    mut query: Query<(&mut Transform,&mut GravityMultiplier, Entity), With<Player>>,
+    mut query: Query<(&mut Transform,&mut GravityScale, Entity), With<Player>>,
     player_animations: Res<PlayerAnimations>,
 ) {
-    query.for_each_mut(|(mut transform, mut gravity_multiplier, entity)| {
+    query.for_each_mut(|(mut transform, mut gravity_scale, entity)| {
         transform.translation.x = 0.0;
         transform.translation.y = 0.0;
-        **gravity_multiplier = 1.0;
+        **gravity_scale = 1.0;
 
         commands.entity(entity).insert(player_animations.flap.clone());
     });
@@ -291,7 +291,7 @@ fn animate_velocity(
 
 fn collisions(
     mut commands: Commands,
-    mut query: Query<(&mut Transform, &mut Velocity, &mut GravityMultiplier, &Collider, Entity), With<Player>>,
+    mut query: Query<(&mut Transform, &mut Velocity, &mut GravityScale, &Collider, Entity), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     mut collision_events: EventReader<CollisionEvent>,
     mut game_score: ResMut<GameScore>,
@@ -303,7 +303,7 @@ fn collisions(
     game_boundaries: Res<GameBoundaries>,
 ) {
     query.for_each_mut(
-        |(mut transform, mut velocity, mut gravity_multiplier, collider, entity)| {
+        |(mut transform, mut velocity, mut gravity_scale, collider, entity)| {
             // ground collision
             let mut shake = shake_query.single_mut();
             if transform.translation.y < game_boundaries.min.y {
@@ -312,7 +312,7 @@ fn collisions(
                     let velocity_multiplier = ((500.0 - velocity.length()) / 300.0).clamp(0.5, 1.5);
                     println!("VALUE: {}", velocity_multiplier);
                     **velocity = Vec2::ZERO;
-                    **gravity_multiplier = 0.0;
+                    **gravity_scale = 0.0;
                     transform.translation.y = game_boundaries.min.y;
 
                     shake.trauma = (1.0 - (velocity_multiplier - 0.5)) * 0.4;
