@@ -118,6 +118,7 @@ fn handle_spawning(
                 },
             ))
             .with_children(|parent| {
+                // bottom pipe
                 parent.spawn((
                     SpriteBundle {
                         texture: game_assets.pipe_image.clone(),
@@ -130,6 +131,7 @@ fn handle_spawning(
                     Pipe,
                 ));
 
+                // top pipe
                 parent.spawn((
                     SpriteBundle {
                         texture: game_assets.pipe_image.clone(),
@@ -146,7 +148,7 @@ fn handle_spawning(
                 parent.spawn((
                     SpatialBundle::default(),
                     Collider {
-                        size: Vec2::new(1.0, event.gap_spacing),
+                        size: Vec2::new(1.0, event.gap_spacing - 1.0),
                     },
                     PipeArea,
                 ));
