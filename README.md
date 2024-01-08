@@ -9,6 +9,7 @@ A flappy bird clone written in Rust for the Bevy Game Engine. Created in my free
 - [ ] High score
 - [ ] Rating system
 - [ ] UI
+- [ ] Randomized assets
 - [ ] Snappy animation
 - [ ] Better collisions
 - [ ] WASM
