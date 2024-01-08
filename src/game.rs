@@ -7,12 +7,13 @@ use bevy_asset_loader::{
 use crate::{
     anchor::AnchorPlugin,
     animation::AnimationPlugin,
+    camera::GameCameraPlugin,
     level::LevelPlugin,
     menu::MenuPlugin,
     physics::{Gravity, PhysicsPlugin},
     pipes::PipesPlugin,
     player::PlayerPlugin,
-    tiling::TilingPlugin, camera::GameCameraPlugin,
+    tiling::TilingPlugin,
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, States)]
@@ -53,13 +54,13 @@ pub struct GameAssets {
     pub player_sprite_folder: Vec<Handle<Image>>,
     #[asset(path = "sprites/ui_background.png")]
     pub ui_background: Handle<Image>,
-    #[asset(path = "audio/flap.ogg")]
+    #[asset(path = "flappy-bird-assets/audio/wing.ogg")]
     pub flap_audio: Handle<AudioSource>,
-    #[asset(path = "audio/hit.ogg")]
+    #[asset(path = "flappy-bird-assets/audio/hit.ogg")]
     pub hit_audio: Handle<AudioSource>,
-    #[asset(path = "audio/fall.ogg")]
+    #[asset(path = "flappy-bird-assets/audio/die.ogg")]
     pub fall_audio: Handle<AudioSource>,
-    #[asset(path = "audio/point.ogg")]
+    #[asset(path = "flappy-bird-assets/audio/point.ogg")]
     pub point_audio: Handle<AudioSource>,
 }
 
@@ -103,10 +104,7 @@ impl Plugin for GamePlugin {
     }
 }
 
-fn restart(
-    mut distance_traveled: ResMut<DistanceTraveled>,
-    mut game_score: ResMut<GameScore>,
-) {
+fn restart(mut distance_traveled: ResMut<DistanceTraveled>, mut game_score: ResMut<GameScore>) {
     **distance_traveled = 0.0;
     **game_score = 0;
 }
@@ -129,7 +127,7 @@ fn update_boundaries(
 ) {
     if let Ok((transform, projection)) = camera_query.get_single() {
         let view_extents = Vec2::new(projection.area.width(), projection.area.height()) * 0.5
-        + transform.translation.xy();
+            + transform.translation.xy();
         let game_height = 175.0;
         game_boundaries.min = Vec2::new(-view_extents.x * 1.25, -50.0);
         game_boundaries.max = Vec2::new(view_extents.x * 1.25, game_boundaries.min.y + game_height);
