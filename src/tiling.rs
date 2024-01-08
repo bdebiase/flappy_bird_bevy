@@ -79,10 +79,7 @@ fn apply_uvs(
     });
 }
 
-fn parllax(
-    mut query: Query<(&mut Tiling, &Parallax)>,
-    distance_traveled: Res<DistanceTraveled>,
-) {
+fn parllax(mut query: Query<(&mut Tiling, &Parallax)>, distance_traveled: Res<DistanceTraveled>) {
     query.for_each_mut(|(mut tiling, parallax)| {
         tiling.uv_offset.x = **distance_traveled * parallax.ratio;
     });

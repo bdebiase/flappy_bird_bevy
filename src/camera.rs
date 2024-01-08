@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_camera_shake::{RandomSource, Shake2d, CameraShakePlugin};
+use bevy_camera_shake::{CameraShakePlugin, RandomSource, Shake2d};
 use rand::{thread_rng, Rng};
 
 use crate::{game::GameBoundaries, player::Player};
@@ -28,9 +28,7 @@ impl Plugin for GameCameraPlugin {
     }
 }
 
-fn setup(
-    mut commands: Commands,
-) {
+fn setup(mut commands: Commands) {
     let mut camera_bundle = Camera2dBundle::default();
     camera_bundle.projection.scale *= 0.25;
     // camera_bundle.transform.translation.x += 50.0;

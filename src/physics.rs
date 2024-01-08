@@ -1,6 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
-use bevy::{prelude::*, sprite::collide_aabb::{collide, Collision}};
+use bevy::{
+    prelude::*,
+    sprite::collide_aabb::{collide, Collision},
+};
 
 #[derive(Resource)]
 pub struct Gravity(Vec2);
@@ -113,8 +116,10 @@ fn check_collisions(
             }
 
             if let Some(collision) = collide(
-                transform_a.translation(), collider_a.size,
-                transform_b.translation(), collider_b.size,
+                transform_a.translation(),
+                collider_a.size,
+                transform_b.translation(),
+                collider_b.size,
             ) {
                 collision_events.send(CollisionEvent {
                     entity_a: *entity_a,

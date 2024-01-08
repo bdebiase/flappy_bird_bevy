@@ -4,7 +4,8 @@ use benimator::{Frame, FrameRate};
 use bevy::{
     audio::{PlaybackMode, VolumeLevel},
     input::common_conditions::input_just_pressed,
-    prelude::*, sprite::collide_aabb::Collision,
+    prelude::*,
+    sprite::collide_aabb::Collision,
 };
 use bevy_camera_shake::Shake2d;
 
@@ -166,7 +167,7 @@ fn handle_death(
             query.for_each_mut(|(mut velocity, mut gravity_scale, _)| {
                 **velocity = Vec2::ZERO;
                 **gravity_scale = 0.0;
-            });    
+            });
         }
         death_timer.reset();
     }
@@ -193,7 +194,7 @@ fn handle_death(
 
 fn restart(
     mut commands: Commands,
-    mut query: Query<(&mut Transform,&mut GravityScale, Entity), With<Player>>,
+    mut query: Query<(&mut Transform, &mut GravityScale, Entity), With<Player>>,
     player_animations: Res<PlayerAnimations>,
 ) {
     query.for_each_mut(|(mut transform, mut gravity_scale, entity)| {
@@ -202,7 +203,9 @@ fn restart(
         transform.rotation = Quat::IDENTITY;
         **gravity_scale = 1.0;
 
-        commands.entity(entity).insert(player_animations.flap.clone());
+        commands
+            .entity(entity)
+            .insert(player_animations.flap.clone());
     });
 }
 
@@ -231,27 +234,25 @@ fn flap_input(
     keyboard_input: Res<Input<KeyCode>>,
     flap_force: Res<FlapForce>,
 ) {
-    query.for_each_mut(
-        |(mut velocity, mut animation_state)| {
-            if keyboard_input.just_pressed(KeyCode::Space) {
-                velocity.y = flap_force.0;
-                animation_state.0.reset();
+    query.for_each_mut(|(mut velocity, mut animation_state)| {
+        if keyboard_input.just_pressed(KeyCode::Space) {
+            velocity.y = flap_force.0;
+            animation_state.0.reset();
 
-                commands.spawn(AudioSourceBundle {
-                    source: game_assets.flap_audio.clone(),
-                    settings: PlaybackSettings {
-                        mode: PlaybackMode::Remove,
-                        volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.1)),
-                        ..default()
-                    },
-                });
+            commands.spawn(AudioSourceBundle {
+                source: game_assets.flap_audio.clone(),
+                settings: PlaybackSettings {
+                    mode: PlaybackMode::Remove,
+                    volume: bevy::audio::Volume::Absolute(VolumeLevel::new(0.1)),
+                    ..default()
+                },
+            });
 
-                if *game_state == GameState::Waiting {
-                    next_state.set(GameState::Playing);
-                }
+            if *game_state == GameState::Waiting {
+                next_state.set(GameState::Playing);
             }
-        },
-    );
+        }
+    });
 }
 
 fn auto_flap(
@@ -292,7 +293,16 @@ fn animate_velocity(
 
 fn collisions(
     mut commands: Commands,
-    mut query: Query<(&mut Transform, &mut Velocity, &mut GravityScale, &Collider, Entity), With<Player>>,
+    mut query: Query<
+        (
+            &mut Transform,
+            &mut Velocity,
+            &mut GravityScale,
+            &Collider,
+            Entity,
+        ),
+        With<Player>,
+    >,
     mut next_state: ResMut<NextState<GameState>>,
     mut collision_events: EventReader<CollisionEvent>,
     mut game_score: ResMut<GameScore>,
@@ -353,7 +363,8 @@ fn collisions(
                             next_state.set(GameState::Stopped);
                         }
 
-                        let overlap_y = (collider.size.y / 2.0 + pipe_collider.size.y / 2.0) - (pipe_transform.translation().y - transform.translation.y).abs();
+                        let overlap_y = (collider.size.y / 2.0 + pipe_collider.size.y / 2.0)
+                            - (pipe_transform.translation().y - transform.translation.y).abs();
                         let translation_vector = match event.collision {
                             Collision::Top => Vec3::new(0.0, overlap_y, 0.0),
                             Collision::Bottom => Vec3::new(0.0, -overlap_y, 0.0),
@@ -364,7 +375,7 @@ fn collisions(
                         transform.translation += translation_vector;
                         println!("TRANSLATED: {translation_vector}");
                     }
-                    
+
                     // score collision
                     if pipe_area_query.contains(event.entity_b) {
                         **game_score += 1;
