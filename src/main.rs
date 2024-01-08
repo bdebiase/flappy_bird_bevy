@@ -1,13 +1,12 @@
 mod anchor;
 mod animation;
-mod level;
+mod camera;
 mod game;
-mod menu;
+mod level;
 mod physics;
 mod pipes;
 mod player;
 mod tiling;
-mod camera;
 
 use bevy::prelude::*;
 use bevy_framepace::FramepacePlugin;

@@ -9,7 +9,6 @@ use crate::{
     animation::AnimationPlugin,
     camera::GameCameraPlugin,
     level::LevelPlugin,
-    menu::MenuPlugin,
     physics::{Gravity, PhysicsPlugin},
     pipes::PipesPlugin,
     player::PlayerPlugin,
@@ -76,7 +75,6 @@ impl PluginGroup for GamePlugins {
             // .add(PhysicsDebugPlugin)
             .add(GamePlugin)
             .add(GameCameraPlugin)
-            .add(MenuPlugin)
             .add(LevelPlugin)
             .add(PlayerPlugin)
             .add(PipesPlugin)
